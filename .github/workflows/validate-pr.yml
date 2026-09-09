@@ -44,3 +44,30 @@ jobs:
         with:
           header: pr-title-lint-error
           delete: true
+
+  validate-esphome-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - plaf108/config.yaml
+          - plwf105/config.yaml
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Write dummy secrets.yaml
+        run: |
+          dir=$(dirname '${{ matrix.config }}')
+          cat > "$dir/secrets.yaml" <<'EOF'
+          wifi_ssid: "ci-dummy-ssid"
+          wifi_password: "ci-dummy-password"
+          EOF
+
+      - name: Build ${{ matrix.config }}
+        uses: esphome/build-action@v8.1.0
+        with:
+          yaml-file: ${{ matrix.config }}
