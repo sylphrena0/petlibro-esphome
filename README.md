@@ -1,142 +1,88 @@
-# petlibro-esphome
+# ESPHome for PetLibro Devices
 
-A collection of alternative DIY open-source [ESPHome firmware](https://esphome.io) for [Petlibro](https://petlibro.com) series of smart cat/dog food feeders and water fountains devices.
+## Overview
 
-Petlibro makes WiFi-connected pet food feeders and water fountains based on ESP8266/ESP32 microcontrollers from Espressif. Their default firmware requires that you use their Petlibro mobile application to create an account and it must via that be connected to their cloud (but use MQTT to communicate internally). 
+A collection of alternative DIY open-source [ESPHome firmware](https://esphome.io) for [Petlibro](https://petlibro.com) series of smart cat/dog food feeders and water fountains devices. Fork of [taylorfinnell/petlibro-esphome](https://github.com/taylorfinnell/petlibro-esphome) to add support for new feeders and improve original devices.
 
-This ESPHome firmware implements local LAN support with almost feature-parity as stock firmware without need for cloud/WAN connection.
+PetLibro makes WiFi-connected pet food feeders and water fountains based on ESP8266/ESP32 microcontrollers from Espressif. Their default firmware requires that you use their PetLibro mobile application to create an account and it must via that be connected to their cloud (but use MQTT to communicate internally). We have good reason not to trust PetLibro with our privacy due to [their exceptionally poor handling of vulnerabilities in the past](https://bobdahacker.com/blog/petlibro).
 
-# Factory firmware backup
+This ESPHome firmware implements local LAN support with feature-parity as stock firmware without need for cloud/WAN connection.
 
-Before flashing the firmware for either device, it is recommended to save a backup of the flash memory. The firmware installed from the factory includes data unique to your device, such as the internal ID and cryptographic keys used to communicate with the cloud server, so if you wish to be able to return your device to a state where it can communicate with the Petlibro cloud then you'll need to have made a backup.
+**Related repositories and alternatives:**
 
-This can be done by following the instructions for setting up the serial connection for your device in developer mode as per the instructions below, and then running the following `esptool` command:
+- Original ESPHome Repository: <https://github.com/taylorfinnell/petlibro-esphome/>
+- Fork of ESPHome Repository with improvements for PLAF108: <https://github.com/pineconedata/esphome-petlibro-plaf108/>
+- MQTT DNS intercept for PLAF203, no flashing required but no control over code executed on device: <https://github.com/icex2/plaf203/>
+- MQTT DNS intercept for a number of devices, no flashing required but no control over code executed on device: <https://github.com/smcneece/petlibro-local/>
+- HAOS Support with official servers, no privacy improvement: <https://github.com/jjjonesjr33/petlibro/>
+
+Please note that this software is provided without any explicit or implied warranty, and maintainers of this repository claim no responsibility for potential damage to your device, voiding of factory warranty, or any other damage caused.
+
+## Supported Devices
+
+- [PLAF108](plaf108/) - Air Smart Feeder
+- [PLAF109](plaf109/) - Polar Wet Food Feeder (refrigerated)
+- [PLWF105](plwf105/) - Dockstream Smart Fountain
+
+## Flashing ESPHome
+
+### Connecting via Serial
+
+Requirements:
+
+- [Latest version of esptool](https://github.com/espressif/esptool/releases)
+- [USB to Serial Adapter](https://www.adafruit.com/product/5994). You will need at least support for TTL and for proper support, buy an adapter with full RS232 serial support.
+- Follow the instructions in the README specific to your device to disassemble your device and connect to your board with the serial adapter before proceeding.
+  - Ideally, you should solder headers to at least GND/TX/RX/VCC, but you may be able to flash by holding contacts to the board instead.
+  - You will also need to follow the instructions specific to your device to boot the device in programming mode.
+- Once done, confirm you have a good connection with `./esptool read-mac`. This will also inform you of which serial port to use later on. Note this down.
+
+### Dumping Stock Firmware
+
+Before flashing the firmware for either device, you should backup the stock firmware. The firmware installed from the factory includes data unique to your device, such as the internal ID and cryptographic keys used to communicate with the cloud server, so if you wish to be able to return your device to a state where it can communicate with the Petlibro cloud then you'll need to have made a backup.
+
+This can be done by following the instructions for setting up the serial connection for your device in developer mode as per the instructions below, and then running the following `esptool` command with the [latest version of esptool](https://github.com/espressif/esptool/releases):
 
 ```bash
-esptool.py --before=default-reset --no-stub read-flash 0x0 ALL petlibro_factory_dump.bin
+./esptool --port /dev/ttyUSB0 --before=default-reset --no-stub read-flash 0x0 ALL petlibro_factory_dump.bin
 ```
 
-You are, of course, free to change the name of the output file as desired.
+If the read fails, try power cycling the device. In testing, it sometimes would fail to read the file part of the way through unless the device had been cleanly restarted immediately before the dump was initiated.
 
-- The `--before=default-reset` and `--no-stub` flags may not be required, but do seem to make the process more reliable.
-- If the read fails, try power cycling the device. In testing, it sometimes would fail to read the file part of the way through unless the device had been cleanly restarted immediately before the dump was initiated.
+Place this file somewhere safe, ideally backed up somewhere. Do not share with untrusted parties, this file contains private information about your device.
 
-# Dockstream Smart Fountain (PLWF105)
+### Preparing ESPHome
 
-An esphome firmware for PLWF105 automatic water bowl (also called the Dockstream Smart Fountain or the PETLIBRO App Monitoring Cat Water Fountain with Wireless Pump) by Petlibro. 
+- Install the [ESPHome Device Builder](https://github.com/esphome/device-builder) dashboard, either standalone or as a HAOS addon.
+- Add a device to the dashboard according to the instructions in the README under your devices subfolder.
+- Inside the device on the dashboard, click install, advanced options, and download the firmware binary.
 
-PLWF105 is available in either white-colored variant or black-colored variant of the same model:
+Alternatively, you can use <https://web.esphome.io/> for the initial flash of your device.
 
-* https://petlibro.com/products/dockstream-app-monitoring-water-fountain
-  * https://www.amazon.com/dp/B0BSFB2D37
+### Flashing Firmware
 
-## About this ESPHome firmware for plwf105
+Next, you'll want to flash ESPHome onto your device.
 
-This ESPHome firmware for plwf105 implements (almost) feature parity as the stock firmware but supports only local connections (instead of requiring cloud connection).
+- Double check that you've backed up the factory firmware somewhere safe.
+- Erase the flash on the device by running `./esptool erase-flash`
+- Write the ESPHome firmware to your device with `./esptool --port /dev/ttyUSB0 --baud 460800 write-flash 0x0 petlibro-<DEVICE-ID>-firmware.factory.bin` replacing with your actual device id.
+- Unless you are doing development work or run into a problem flashing, you're done with the hardware. You can reassemble your device and put away your serial adapter, if you need to flash stock firmware before selling the device, you can do so with an OTA update.
 
-### Supported Features
+Next, check your devices README for any calibration steps or notes.
 
-- Turn pump on or off
-- Red LED
-- Yellow LED
-- Scale (used to determine water level)
-- Pump error indicator
-- water consumption tracking
-- water reporting in oz and ml
-- configurable pump intervals
-- integrated calibration process
+## Contributing
 
-## Flashing prereqs
+Changes are welcome and encouraged. To keep changes reviewable and the changelog organized by device:
 
-If you carefully open the water bowl "base" you will see a PCB holding a `ESP32-C3-WROOM-03`, a `HX7111` and a voltage regulator. There is also one more chip on the board but I am unable to identify it.
-![PCB](https://github.com/user-attachments/assets/cf67e89f-4cc1-4773-8e06-78d1bb700e36)
+- Title your PR using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) with a scope matching that folder, e.g. `fix(plaf109): correct lid timing` or `docs(docs): update flashing steps`. Allowed scopes: `plaf108`, `plaf109`, `plwf105`, `docs`, `ci`.
+- Scope each PR to a single top-level folder or file (e.g. `plaf108/`, `plaf109/`, `plwf105/`, `README.md`, `.github/`) - one component's changes per PR.
 
-The PCB very conveniently contains 3 pins that we can use to flash our firmware. `GND`, `TX`, and `RX`.
-The PC has a `VCC` pin that can be used to power to program, but your USB-Serial converter needs to be able to supply enough current. I suggest using the USB plug to power while programing.
-The PCB also has two pads on the lower right corner labled `B` and `G`. These pads can be shorted to put the ESP chip in programmer mode.
+Both are checked automatically on PRs, with a comment left explaining any issue.
 
-## Flashing
+### Adding a New Device
 
-0) You will need to generate a firmware .bin file from ESPHome based on the .yaml file in this repo.  
+If you're reverse-engineering a new PetLibro device to add support for it, try:
 
-1) Plug the USB to serial converter into your computer and hook up to the pin holes as described below. Do NOT power the board/fountain yet.
-
-
-`GND` -> `GND`
-
-`TX`  -> `RX`
-
-`RX`  -> `TX`
-
-You don't even need to solder anything most likely. I was able to hold the pins in place with just tension.
-
-2) Take a small wire and hold it on the `B` and `G` pads described above.
-3) While still holding the wire in place, plug in the pumps USB cable.
-4) At this point the board should be in programming mode.  If you left the top panel connected, the light should be a steady white.  If it's slowly flashing white you did not enter programming mode.
-5) Flash the firmware you created above.  You can use use https://web.esphome.io/ to do the flashing.
-
-If you run into problems or otherwise need to revert, you can reflash back to stock firmware using the .bin file in this repo.
-
-## Result
-
-Here is how it looks in HomeAssistant:
-
-![Result](https://github.com/user-attachments/assets/24344f14-f331-4fa7-b6bd-9aeaddb32a11)
-
-## Calibration
-
-1) The water fountain will automatically enter calibration mode after a flash or after hitting "Start Calibration" in the home assistant UI
-2) The fountain will now be in calibration mode (slow flashing yellow light).
-3) With the water a the min fill line and fully assembled, hit the "wifi" button (or enter the number yourself in the home assistant UI)
-4) The light should flash fast now, with the water a the max fill line and fully assembled, hit the "wifi" button (or enter the number yourself in the home assistant UI)
-
-
-# Petlibro Air Smart Feeder (PLAF108 model)
-
-An ESPHome firmware for PLAF108 automatic pet feeder (also called the Air Smart Feeder) by Petlibro.
-
-PLAF108 is available in either white-colored variant or black-colored variant of the same model:
-
-* https://petlibro.com/products/air-wifi-feeder
-  * https://www.amazon.com/dp/B0CDC3WK46
-
-## About this ESPHome firmware for PLAF108
-
-This ESPHome firmware for PLAF108 implements (almost) feature parity as the stock firmware but supports only local connections (instead of requiring cloud connection).
-
-### Supported Features
-
-- Alarm Red LED
-- Sensor for showing if feeder is on battery power
-- Sensor for showing if battery is plugged in
-- Sensor to enable the "Food Detection" sensor
-- Sensor for showing if mains connected
-- Switch to turn motor left
-- Switch to turn motor right
-- Sensor to show when the motor has done a quarter turn
-
-### Unknowns
-
-I do not know what GPIO0 and GPIO1 are for. I think it's for the DC-power current sensor to maybe determine battery charge. But, that's a guess.
-
-## Flashing prereqs
-
-The PCB very conveniently contains 4 pins that we can use to flash our firmware. `GND`, `TX`, `RX`, and `VCC`. The PCB also has two unlabled pin holes. These holes can be connected to each other put the ESP chip in programmer mode.
-
-## Flashing
-
-1) Plug the USB to serial converter into your computer and hook up to the pin holes as described below. Do NOT plugin the board yet.
-
-
-`GND` -> `GND`
-
-`TX`  -> `RX`
-
-`RX`  -> `TX`
-
-You don't even need to solder anything most likely. I was able to hold the pins in place with just tension.
-
-2) Take a small wire and hold place it in the unmarked pin holes described above
-3) While still holding the wire in place, plug in the board.
-4) At this point the board should be in programming mode.
-5) Flash the firmware in this repo.
+- Connecting via serial and watch the boot/UART logs. The stock firmware's log output may reveal GPIO pin assignments and modes. This might not work on all models
+- Dumping the factory firmware (see "Dumping Stock Firmware" above) and analyze it with [Ghidra](https://ghidra-sre.org/) to understand what the stock firmware is doing and reveal GPIO functions
+- If the device has an I2C expander on the board (like PLAF109), you can sniff the I2C bus to determine its behavior. [sigrok](https://sigrok.org/) with a logic analyzer, a Raspberry Pi Pico running [sigrok-pico](https://github.com/pico-coder/sigrok-pico) worked well for me (since I had a spare lying around).
