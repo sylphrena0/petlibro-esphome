@@ -1,0 +1,19 @@
+plaf108:
+  - changed-files:
+      - any-glob-to-any-file: 'plaf108/**'
+
+plaf109:
+  - changed-files:
+      - any-glob-to-any-file: 'plaf109/**'
+
+plwf105:
+  - changed-files:
+      - any-glob-to-any-file: 'plwf105/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: 'README.md'

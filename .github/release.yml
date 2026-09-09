@@ -1,0 +1,14 @@
+changelog:
+  categories:
+    - title: "PLAF108: Air Smart Feeder"
+      labels: ["plaf108"]
+    - title: "PLAF109: Polar Wet Food Feeder"
+      labels: ["plaf109"]
+    - title: "PLWF105: Dockstream Smart Fountain"
+      labels: ["plwf105"]
+    - title: "Documentation"
+      labels: ["docs"]
+    - title: "CI / Workflows"
+      labels: ["ci"]
+    - title: "Other Changes"
+      labels: ["*"]
