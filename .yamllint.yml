@@ -1,0 +1,9 @@
+extends: default
+
+rules:
+  line-length: disable
+  document-start: disable
+  colons: disable
+  truthy:
+    allowed-values: ["true", "false", "yes", "no", "on", "off"]
+    check-keys: false

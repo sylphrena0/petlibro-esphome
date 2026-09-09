@@ -71,3 +71,26 @@ jobs:
         uses: esphome/build-action@v8.1.0
         with:
           yaml-file: ${{ matrix.config }}
+
+  lint-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Get changed YAML files
+        id: changed-yaml
+        uses: tj-actions/changed-files@v47
+        with:
+          files: |
+            **/*.yaml
+            **/*.yml
+
+      - name: yamllint
+        if: steps.changed-yaml.outputs.any_changed == 'true'
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_file: .yamllint.yml
+          file_or_dir: ${{ steps.changed-yaml.outputs.all_changed_files }}
