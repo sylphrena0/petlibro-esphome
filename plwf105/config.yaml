@@ -1,5 +1,5 @@
 substitutions:
-#You should choose to set either hide_oz or hide_ml to true to reduce the number of sensors present in HA
+  # you should choose to set either hide_oz or hide_ml to true to reduce the number of sensors present in HA
   hide_oz: "false"
   hide_ml: "false"
 
@@ -75,44 +75,39 @@ wifi:
 captive_portal:
 
 
-
 globals:
-
-#tmp variable to hold whatever value the water was at before an event is detected
+  # tmp variable to hold whatever value the water was at before an event is detected
   - id: drinking_event_before
     type: int
     restore_value: no
     initial_value: '0'
 
-
-#the amount of water consumed after an event has finished
+  # the amount of water consumed after an event has finished
   - id: drinking_event_amount
     type: int
     restore_value: no
 
-#This is where the total amount of water over for each hour is stored per index (24 hours total)
+  # this is where the total amount of water over for each hour is stored per index (24 hours total)
   - id: drinking_roll_24
     type: int[24]
     initial_value: '{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}'
     restore_value: yes
 
-#This is where the total amount of water over 24 hrs is stored
+  # this is where the total amount of water over 24 hrs is stored
   - id: drinking_roll
     type: int
     restore_value: yes
 
-#temp var to hold the current hours total water, to be pushed into the roll at the top of each hour
+  # temp var to hold the current hours total water, to be pushed into the roll at the top of each hour
   - id: drinking_tmp
     type: int
     restore_value: yes
 
-#temp var to hold the current mins for pump intervals
+  # temp var to hold the current mins for pump intervals
   - id: pump_time_tmp
     type: int
     restore_value: no
     initial_value: '0'
-
-
 
 
 # The Low level water set from calibrating it yourself
@@ -189,7 +184,7 @@ number:
     step: 1
     restore_value: yes
 
-# This was done by taking internal water level before. Adding 2 Oz of water, then measuring after. Taking (After_wl - Before_wl) / 2
+  # This was done by taking internal water level before. Adding 2 Oz of water, then measuring after. Taking (After_wl - Before_wl) / 2
   - platform: template
     name: "Level-Oz Conversion"
     id: water_oz_conv
@@ -203,7 +198,7 @@ number:
     initial_value: 11225
     step: 0.01
     restore_value: yes
-# This was done by taking internal water level before. Adding 100 ml of water, then measuring after. Taking (After_wl - Before_wl) / 100
+  # This was done by taking internal water level before. Adding 100 ml of water, then measuring after. Taking (After_wl - Before_wl) / 100
   - platform: template
     name: "Level-mL Conversion"
     id: water_ml_conv
@@ -218,7 +213,7 @@ number:
     step: 0.01
     restore_value: yes
 
-    # How long to keep the pump on for
+  # How long to keep the pump on for
   - platform: template
     name: "Pump On (mins)"
     id: pump_on
@@ -232,7 +227,7 @@ number:
     step: 1
     restore_value: yes
 
-    # How long to keep the pump off for
+  # How long to keep the pump off for
   - platform: template
     name: "Pump Off (mins)"
     id: pump_off
@@ -246,11 +241,11 @@ number:
     step: 1
     restore_value: yes
 
-#current state on how we are treating the front button 0 cal low, 1 cal high, 2 normal reset filter, 3 button disabled
+  # current state on how we are treating the front button 0 cal low, 1 cal high, 2 normal reset filter, 3 button disabled
   - platform: template
     name: button mode
     id: button_mode
-    internal: True
+    internal: true
     mode: box
     optimistic: true
     min_value: 0
@@ -273,11 +268,6 @@ number:
             if(x==3){
                 id(yellow_led).turn_off().perform();
               }
-
-
-
-
-
 
 
 sensor:
@@ -319,42 +309,41 @@ sensor:
       - timeout:
           timeout: 60s
           value: 0
-# This holds the water from 60s ago
+  # This holds the water from 60s ago
   - platform: copy
     source_id: water_level
     name: "water 60s delay"
     filters:
-    - lambda: |-
-        static float q[21] = {0};
-        float qmax=0;
-        float qmin = 1000000000;
-        for (int i = 0; i < 20; i++){
-          q[i] = q[i+1];
-          if(q[i]<qmin){qmin=q[i];}
-          if(q[i]>qmax){qmax=q[i];}
-        }
-        q[20] = x;
-
-        //Check if the current water level is more than 1k different AND that we aren't already in an event AND that water is above min level
-        if(((abs(x-q[0]) >= 1000) && (id(drinking_event_before) == 0) && (x > id(min_water_level).state))) {
-          id(drinking_event_before) = q[0]; //set the before val to the oldest val we have. (perhaps swap to using a min value here to deal with bounce)
-        }
-
-        //Now check to see if the water has been stable and we are in an event
-        if((id(drinking_event_before) != 0) && (abs(qmax-qmin) <= 400) && (x > id(min_water_level).state)){
-          //Make sure the event is above 400 and below 67350 (~.03oz and ~6oz)
-          if((id(drinking_event_before) - q[20] > 400) && (id(drinking_event_before) - q[20] < 67350)){
-
-            id(drinking_event_amount) = id(drinking_event_before) - x;
-            id(drinking_tmp)= id(drinking_tmp) + id(drinking_event_amount); //the _tmp is used to hold all events over an hour, used for a rolling 24hour cumiliatve water
-            id(drinking_event_before) = 0;
-          } else {
-
-            id(drinking_event_before) = 0;
+      - lambda: |-
+          static float q[21] = {0};
+          float qmax=0;
+          float qmin = 1000000000;
+          for (int i = 0; i < 20; i++){
+            q[i] = q[i+1];
+            if(q[i]<qmin){qmin=q[i];}
+            if(q[i]>qmax){qmax=q[i];}
           }
-        }
-        return q[0];
+          q[20] = x;
 
+          //Check if the current water level is more than 1k different AND that we aren't already in an event AND that water is above min level
+          if(((abs(x-q[0]) >= 1000) && (id(drinking_event_before) == 0) && (x > id(min_water_level).state))) {
+            id(drinking_event_before) = q[0]; //set the before val to the oldest val we have. (perhaps swap to using a min value here to deal with bounce)
+          }
+
+          //Now check to see if the water has been stable and we are in an event
+          if((id(drinking_event_before) != 0) && (abs(qmax-qmin) <= 400) && (x > id(min_water_level).state)){
+            //Make sure the event is above 400 and below 67350 (~.03oz and ~6oz)
+            if((id(drinking_event_before) - q[20] > 400) && (id(drinking_event_before) - q[20] < 67350)){
+
+              id(drinking_event_amount) = id(drinking_event_before) - x;
+              id(drinking_tmp)= id(drinking_tmp) + id(drinking_event_amount); //the _tmp is used to hold all events over an hour, used for a rolling 24hour cumulative water
+              id(drinking_event_before) = 0;
+            } else {
+
+              id(drinking_event_before) = 0;
+            }
+          }
+          return q[0];
 
 
   - platform: uptime
@@ -365,7 +354,7 @@ sensor:
     update_interval: 60s
 
 
-# This is a debug value, used to see what the initial water is before an event
+  # This is a debug value, used to see what the initial water is before an event
   - platform: template
     name: Before event
     id: tmp_before
@@ -429,7 +418,7 @@ sensor:
         }
         return ((id(water_level).state - id(min_water_level).state) / id(water_ml_conv).state);
 
-# This is the amount of water last drinken by the cat (should this blank out after a time?) Debug, OZ, and mL in that order
+# This is the amount of water last drunk by the cat (should this blank out after a time?) Debug, OZ, and mL in that order
   - platform: template
     name: Last Drink Amount
     id: water_cons
@@ -539,10 +528,8 @@ sensor:
           return id(drinking_roll) / id(water_ml_conv).state;
 
 
-
 switch:
-
-# Switch to turn the pump on and off
+  # Switch to turn the pump on and off
   - platform: gpio
     name: 'Pump'
     id: Pump
@@ -552,52 +539,50 @@ switch:
       mode: OUTPUT
     restore_mode: ALWAYS_ON
 
-# Switch to either use or not use the front button to reset the filter life
+  # Switch to either use or not use the front button to reset the filter life
   - platform: template
     name: "Front Button Resets Filter"
     icon: "mdi:filter-settings"
     entity_category: config
     id: front_filter
     restore_mode: RESTORE_DEFAULT_ON
-    optimistic: True
+    optimistic: true
     turn_on_action:
       - lambda:
-            if(id(button_mode).state==3){
-                id(button_mode).make_call().set_value(2).perform();
-            }
+          if(id(button_mode).state==3){
+              id(button_mode).make_call().set_value(2).perform();
+          }
     turn_off_action:
       - lambda:
-            if(id(button_mode).state==2){
-                id(button_mode).make_call().set_value(3).perform();
-            }
+          if(id(button_mode).state==2){
+              id(button_mode).make_call().set_value(3).perform();
+          }
 
 
-# Switch to enable the pump interval timings
+  # Switch to enable the pump interval timings
   - platform: template
     name: "Pump Interval"
     icon: "mdi:pump-off"
     entity_category: config
     id: pump_interval
     restore_mode: RESTORE_DEFAULT_OFF
-    optimistic: True
+    optimistic: true
     turn_off_action:
       then:
         - lambda: |-
             id(pump_time_tmp)=0;
 
 
-
-
 output:
 
-#Yellow LED
+  # Yellow LED
   - platform: gpio
     id: yellow_led_output
     pin:
       number: GPIO6
       mode: OUTPUT
 
-#Red LED
+  # Red LED
   - platform: gpio
     id: red_led_output
     pin:
@@ -613,16 +598,16 @@ light:
       - strobe:
           name: Slow_Blink
           colors:
-            - state: True
+            - state: true
               duration: 500ms
-            - state: False
+            - state: false
               duration: 500ms
       - strobe:
           name: Fast_Blink
           colors:
-            - state: True
+            - state: true
               duration: 100ms
-            - state: False
+            - state: false
               duration: 100ms
 
   - platform: binary
@@ -633,16 +618,16 @@ light:
       - strobe:
           name: Slow_Blink
           colors:
-            - state: True
+            - state: true
               duration: 500ms
-            - state: False
+            - state: false
               duration: 500ms
       - strobe:
           name: Fast_Blink
           colors:
-            - state: True
+            - state: true
               duration: 100ms
-            - state: False
+            - state: false
               duration: 100ms
 
 text_sensor:
@@ -660,7 +645,7 @@ text_sensor:
 
 binary_sensor:
 
-#formerly the wi-fi button, used for calibration and restting the filter
+  # formerly the wi-fi button, used for calibration and resetting the filter
   - platform: gpio
     name: "Front Button"
     pin:
@@ -694,7 +679,7 @@ binary_sensor:
                 // Do nothing
             }
 
-# this detects if errors is above 9
+  # this detects if errors is above 9
   - platform: template
     name: "Empty"
     icon: "mdi:water-alert-outline"
@@ -709,7 +694,7 @@ binary_sensor:
               id(red_led).turn_off().perform();
             }
 
-#filter expired
+  # filter expired
   - platform: template
     id: filter_exp
     name: "Filter Expired"
@@ -726,13 +711,12 @@ binary_sensor:
             }
 
 
-# this detects if the water tank is removed
+  # this detects if the water tank is removed
   - platform: template
     name: "Tank Removed"
     icon: "mdi:watering-can-outline"
     lambda: |-
       return id(water_level).state < id(min_water_level).state - 150000;
-
 
 
 time:
@@ -744,10 +728,10 @@ time:
         minutes: 0
         hours: /1
         then:
-            lambda: |-
-                id(drinking_roll) = id(drinking_roll) + id(drinking_tmp) - id(drinking_roll_24)[id(sntp_time).now().hour];
-                id(drinking_roll_24)[id(sntp_time).now().hour] = id(drinking_tmp);
-                id(drinking_tmp) = 0;
+          lambda: |-
+              id(drinking_roll) = id(drinking_roll) + id(drinking_tmp) - id(drinking_roll_24)[id(sntp_time).now().hour];
+              id(drinking_roll_24)[id(sntp_time).now().hour] = id(drinking_tmp);
+              id(drinking_tmp) = 0;
 
 
 datetime:
@@ -796,21 +780,17 @@ interval:
           }
 
 
-
-
 button:
   - platform: template
     name: Filter Changed
     id: filter_changed_button
     icon: "mdi:file-swap"
     on_press:
-    - datetime.date.set:
-        id: filter_install_date
-        date: !lambda 'return id(sntp_time).now();'
-    - script.execute:
-        id: set_filter_exp
-
-
+      - datetime.date.set:
+          id: filter_install_date
+          date: !lambda 'return id(sntp_time).now();'
+      - script.execute:
+          id: set_filter_exp
 
 
   - platform: template
@@ -819,19 +799,19 @@ button:
     id: reset_24_roll
     icon: "mdi:file-swap"
     on_press:
-    - globals.set:
-        id: drinking_roll
-        value: '0'
-    - globals.set:
-        id: drinking_event_before
-        value: '0'
-    - globals.set:
-        id: drinking_tmp
-        value: '0'
-    - lambda: |-
-        for (uint8_t i = 0;i< 25; i++) {
-                    id(drinking_roll_24)[i] = 0;
-        }
+      - globals.set:
+          id: drinking_roll
+          value: '0'
+      - globals.set:
+          id: drinking_event_before
+          value: '0'
+      - globals.set:
+          id: drinking_tmp
+          value: '0'
+      - lambda: |-
+          for (uint8_t i = 0;i< 25; i++) {
+                      id(drinking_roll_24)[i] = 0;
+          }
 
 
   - platform: template
@@ -840,24 +820,24 @@ button:
     id: calibrate
     icon: "mdi:scale-unbalanced"
     on_press:
-    - lambda: |-
-        id(button_mode).make_call().set_value(0).perform();
+      - lambda: |-
+          id(button_mode).make_call().set_value(0).perform();
 
 
 script:
   - id: set_filter_exp
     mode: restart
     then:
-    - datetime.date.set:
-        id: filter_exp_date
-        date: !lambda |-
-                  auto now = id(sntp_time).now();
-                  now.day_of_month = id(filter_install_date).day;
-                  now.month = id(filter_install_date).month;
-                  now.year = id(filter_install_date).year ;
-                  uint8_t offset = (uint8_t) id(filter_life).state;
-                  for (uint8_t i = 0;i< offset; i++)
-                    now.increment_day();
-                  return now;
+      - datetime.date.set:
+          id: filter_exp_date
+          date: !lambda |-
+                    auto now = id(sntp_time).now();
+                    now.day_of_month = id(filter_install_date).day;
+                    now.month = id(filter_install_date).month;
+                    now.year = id(filter_install_date).year ;
+                    uint8_t offset = (uint8_t) id(filter_life).state;
+                    for (uint8_t i = 0;i< offset; i++)
+                      now.increment_day();
+                    return now;
 
 #### In Loving Memory Of Tuxey Putnam 2006-2024 ######
