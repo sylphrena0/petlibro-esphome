@@ -77,9 +77,6 @@ aw9523:
   id: expander
 
 globals:
-  - id: lid_is_open
-    type: bool
-    initial_value: "false"
   - id: lid_closed
     type: bool
     initial_value: "false"
@@ -609,27 +606,6 @@ button:
       - switch.turn_off: plate_grating_sensor_power
   - platform: template
     name: "Toggle Lid"
-    icon: mdi:swap-vertical
-    web_server:
-      sorting_group_id: core
-    on_press:
-      then:
-        - if:
-            condition:
-              - lambda: return id(lid_is_open);
-              - binary_sensor.is_off: presence_detector
-            then:
-              - switch.turn_on: lid_close_pin
-              - delay: 4800ms
-              - switch.turn_off: lid_close_pin
-              - lambda: 'id(lid_is_open) = !id(lid_is_open);'
-            else:
-              - switch.turn_on: lid_open_pin
-              - delay: 4500ms
-              - switch.turn_off: lid_open_pin
-              - lambda: 'id(lid_is_open) = !id(lid_is_open);'
-  - platform: template
-    name: "Toggle Lid (using grater)"
     icon: mdi:swap-vertical
     web_server:
       sorting_group_id: core
