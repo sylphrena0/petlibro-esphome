@@ -52,6 +52,7 @@ jobs:
       matrix:
         config:
           - plaf108/config.yaml
+          - plaf109/config.yaml
           - plwf105/config.yaml
     steps:
       - name: Checkout PR head
@@ -65,6 +66,11 @@ jobs:
           cat > "$dir/secrets.yaml" <<'EOF'
           wifi_ssid: "ci-dummy-ssid"
           wifi_password: "ci-dummy-password"
+          plaf109__encryption_key: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          plaf109__ota_password: "ci-dummy-ota-password"
+          plaf109__hotspot_password: "ci-dummy-hotspot-password"
+          plaf109__web_user: "ci-dummy-user"
+          plaf109__web_password: "ci-dummy-web-password"
           EOF
 
       - name: Build ${{ matrix.config }}
