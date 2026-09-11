@@ -168,8 +168,9 @@ script:
             - binary_sensor.is_on: door_grating_raw
           then:
             - logger.log:
-                format: grate did not turn off when toggling door
+                format: "grate did not turn off when toggling door"
                 level: WARN
+                tag: 'lid'
           else:
             - wait_until:
                 condition:
@@ -188,7 +189,7 @@ number:
   - platform: template
     name: "Food Cooling Target"
     id: cooling_target
-    icon: mdi:thermometer-chevron-down
+    icon: "mdi:thermometer-chevron-down"
     web_server:
       sorting_group_id: cooling
     unit_of_measurement: "°F"
@@ -306,7 +307,7 @@ switch:
   - platform: template
     name: "Cooling Enabled"
     id: cooling_enabled
-    icon: mdi:snowflake
+    icon: "mdi:snowflake"
     web_server:
       sorting_group_id: cooling
     restore_mode: RESTORE_DEFAULT_ON
@@ -409,7 +410,7 @@ sensor:
   - platform: template
     name: "Pet Visit Count"
     id: pet_visit_count
-    icon: mdi:paw
+    icon: "mdi:paw"
     web_server:
       sorting_group_id: presence
     accuracy_decimals: 0
@@ -451,13 +452,16 @@ binary_sensor:
     filters:
       - invert   # firmware reads LOW = AC present; invert so the entity reads ON when plugged in
     on_press:
-      - logger.log: "ac_power: ON"
+      - logger.log:
+          format: "AC Power reconnected"
+          level: INFO
+          tag: events
     on_release:
       then:
-        - logger.log: "ac_power: OFF"
         - logger.log:
-            format: AC Power disconnected, disabling cooling to preserve battery
+            format: "AC Power disconnected, disabling cooling to preserve battery"
             level: WARN
+            tag: events
         - switch.turn_off: tec_control_pin
   - platform: gpio
     name: "Reset Button"
@@ -472,9 +476,15 @@ binary_sensor:
         pullup: true
       inverted: true
     on_press:
-      - logger.log: "reset_button: ON"
+      - logger.log:
+          format: "reset_button: ON"
+          level: INFO
+          tag: events
     on_release:
-      - logger.log: "reset_button: OFF"
+      - logger.log:
+          format: "reset_button: OFF"
+          level: INFO
+          tag: events
   - platform: gpio
     name: "Pet Present"
     id: presence_detector
@@ -493,7 +503,10 @@ binary_sensor:
           condition:
             switch.is_on: presence_emitter_switch
           then:
-            - logger.log: "presence_detector: ON"
+            - logger.log:
+                format: "presence_detector: ON"
+                level: INFO
+                tag: sensors
             - lambda: |-
                 id(visit_start_time) = millis();
                 id(visit_in_progress) = true;
@@ -504,7 +517,10 @@ binary_sensor:
           condition:
             switch.is_on: presence_emitter_switch
           then:
-            - logger.log: "presence_detector: OFF"
+            - logger.log:
+                format: "presence_detector: OFF"
+                level: INFO
+                tag: sensors
             - lambda: |-
                 if (id(visit_in_progress)) {
                   float duration_s = (millis() - id(visit_start_time)) / 1000.0;
@@ -524,9 +540,15 @@ binary_sensor:
         pullup: true
       inverted: true
     on_press:
-      - logger.log: "plate_grating_raw: ON"
+      - logger.log:
+          format: "plate_grating_raw: ON"
+          level: DEBUG
+          tag: sensors
     on_release:
-      - logger.log: "plate_grating_raw: OFF"
+      - logger.log:
+          format: "plate_grating_raw: OFF"
+          level: DEBUG
+          tag: sensors
   - platform: gpio
     id: door_grating_raw
     web_server:
@@ -537,14 +559,20 @@ binary_sensor:
       mode:
         input: true
     on_press:
-      - logger.log: "door_grating_raw: ON"
+      - logger.log:
+          format: "door_grating_raw: ON"
+          level: DEBUG
+          tag: sensors
     on_release:
-      - logger.log: "door_grating_raw: OFF"
+      - logger.log:
+          format: "door_grating_raw: OFF"
+          level: DEBUG
+          tag: sensors
 text_sensor:
   - platform: template
     id: hardware_version
     name: "Hardware Version"
-    icon: mdi:tag-outline
+    icon: "mdi:tag-outline"
     web_server:
       sorting_group_id: diagnostics
     update_interval: never
@@ -606,7 +634,7 @@ button:
       - switch.turn_off: plate_grating_sensor_power
   - platform: template
     name: "Toggle Lid"
-    icon: mdi:swap-vertical
+    icon: "mdi:swap-vertical"
     web_server:
       sorting_group_id: core
     on_press:
@@ -623,7 +651,9 @@ button:
                   then:
                     - switch.turn_on: toggle_door_closed
                   else:
-                    - logger.log: 'Toggle Lid: skipping close, presence detected'
+                    - logger.log:
+                        format: 'skipping close, presence detected'
+                        tag: 'lid'
             else:
               - switch.turn_off: toggle_door_closed
 
@@ -631,7 +661,7 @@ select:
   - platform: template
     name: "Status LED"
     id: status_led
-    icon: mdi:led-on
+    icon: "mdi:led-on"
     optimistic: true
     restore_value: false
     initial_option: "White"
