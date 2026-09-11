@@ -4,6 +4,8 @@ rules:
   line-length: disable
   document-start: disable
   colons: disable
+  braces:
+    forbid: true
   truthy:
     allowed-values: ["true", "false", "yes", "no", "on", "off"]
     check-keys: false
