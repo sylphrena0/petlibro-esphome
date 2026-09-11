@@ -24,11 +24,11 @@ captive_portal:
 web_server:
 
 binary_sensor:
-  #I (468) gpio: GPIO[1]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0                                                                                                                                                                                                                                               
-  #I (599) gpio: GPIO[2]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0   
+  # I (468) gpio: GPIO[1]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0
+  # I (599) gpio: GPIO[2]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
 
   - platform: gpio
-    pin: 
+    pin:
       number: GPIO1
       mode:
         output: true
@@ -42,51 +42,50 @@ binary_sensor:
     name: "GPIO2"
 
 
-
-  #I (571) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:4   
+  # I (571) gpio: GPIO[0]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:4
   - platform: gpio
     name: Battery
-    pin: 
+    pin:
       number: GPIO0
-      mode: 
+      mode:
         pullup: true
-        input:  true  
+        input:  true
 
-  #I (590) gpio: GPIO[4]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+  # I (590) gpio: GPIO[4]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
   - platform: gpio
     name: 'Battery Plugged In'
     pin: GPIO4
 
-  #I (562) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:4   
+  # I (562) gpio: GPIO[5]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:4
   - platform: gpio
-    pin: 
+    pin:
       number: GPIO5
       inverted: true
-      mode: 
+      mode:
         pullup: true
         input:  true
     name: Mains Connected
-  
-  #I (543) gpio: GPIO[8]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:4         # SENSOR                                                                   
+
+  # I (543) gpio: GPIO[8]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:4         # SENSOR
   - platform: gpio
     name: Motor Sensor
-    pin: 
+    pin:
       inverted: true
       number: GPIO8
-      mode: 
+      mode:
         pullup: true
         input:  true
 
-  #I (553) gpio: GPIO[18]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0                                                                   
+  # I (553) gpio: GPIO[18]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
   - platform: gpio
-    pin: 
+    pin:
       number: GPIO18
-      mode: 
+      mode:
         pullup: true
         input:  true
     name: Food Sensor
 
-  #I (503) gpio: GPIO[19]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:4        
+  # I (503) gpio: GPIO[19]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:4
   - platform: gpio
     pin:
       number: GPIO19
@@ -95,9 +94,9 @@ binary_sensor:
         input: true
     name: Reset Button
 
-#I (530) gpio: GPIO[3]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0  
+# I (530) gpio: GPIO[3]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
 status_led:
-  pin: 
+  pin:
     number: GPIO3
     mode:
       output: true
@@ -106,39 +105,39 @@ switch:
   - platform: restart
     name: "Restart"
 
-  #I (481) gpio: GPIO[6]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0    
+  # I (481) gpio: GPIO[6]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
   - platform: gpio
     name: 'Motor Right'
-    pin: 
+    pin:
       number: GPIO6
-      mode: 
+      mode:
         output: true
     restore_mode: ALWAYS_OFF
 
-  #I (490) gpio: GPIO[7]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+  # I (490) gpio: GPIO[7]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
   - platform: gpio
     name: 'Motor Left'
-    pin: 
+    pin:
       number: GPIO7
-      mode: 
+      mode:
         output: true
     restore_mode: ALWAYS_OFF
-  
-  #I (516) gpio: GPIO[10]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0             
+
+  # I (516) gpio: GPIO[10]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0
   - platform: gpio
     name: 'Alarm LED'
-    pin: 
+    pin:
       number: GPIO10
-      mode: 
+      mode:
         output: true
         pulldown: true
 
-  #I (580) gpio: GPIO[9]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0     
+  # I (580) gpio: GPIO[9]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
   - platform: gpio
     name: 'Enable Food Sensor'
-    pin: 
+    pin:
       number: GPIO9
-      mode: 
+      mode:
         output: true
     restore_mode: ALWAYS_ON
 
