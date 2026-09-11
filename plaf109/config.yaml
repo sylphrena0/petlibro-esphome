@@ -7,7 +7,8 @@ esphome:
   on_boot:
     then:
       - component.update: hardware_version
-      - switch.turn_on: toggle_door_closed  # matches stock
+      - script.execute:
+          id: door_toggle
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -34,7 +35,6 @@ wifi:
     password: !secret plaf109__hotspot_password
 captive_portal:
   id: plaf109_fallback
-
 web_server:
   port: 80
   version: 3
@@ -79,7 +79,9 @@ aw9523:
 globals:
   - id: lid_is_open
     type: bool
-    restore_value: yes
+    initial_value: "false"
+  - id: lid_closed
+    type: bool
     initial_value: "false"
   - id: status_led_mode
     type: int
@@ -149,32 +151,39 @@ script:
                   - delay: 1s
   - id: door_toggle
     mode: single
-    parameters:
-      closing: bool
     then:
+      - lambda: id(lid_closed) = !id(lid_closed);
       - switch.turn_on: door_grating_sensor_power
+      - delay: 300ms  # wait for sensor power on
       - if:
-          condition:
-            lambda: return closing;
+          condition: &door-closed
+            lambda: return id(lid_closed);
           then:
-            - delay: 300ms
             - switch.turn_on: lid_close_pin
           else:
             - switch.turn_on: lid_open_pin
       - wait_until:
           condition:
             - binary_sensor.is_off: door_grating_raw
-          timeout: 500ms
-      - wait_until:
+          timeout: 800ms
+      - if:  # avoid stalling, if already at requested state, grate will not turn off
           condition:
             - binary_sensor.is_on: door_grating_raw
-          timeout: 6s
+          then:
+            - logger.log:
+                format: grate did not turn off when toggling door
+                level: WARN
+          else:
+            - wait_until:
+                condition:
+                  - binary_sensor.is_on: door_grating_raw
+                timeout: 6s
       - if:
-          condition:
-            lambda: return closing;
+          condition: *door-closed
           then:
             - switch.turn_off: lid_close_pin
           else:
+            - delay: 200ms  # for some reason grate triggers early on open
             - switch.turn_off: lid_open_pin
       - switch.turn_off: door_grating_sensor_power
 
@@ -292,15 +301,11 @@ switch:
   - platform: template
     id: toggle_door_closed
     internal: true
-    restore_mode: ALWAYS_OFF
-    turn_on_action:
+    turn_on_action: &door_toggle_action
       - script.execute:
           id: door_toggle
-          closing: true
-    turn_off_action:
-      - script.execute:
-          id: door_toggle
-          closing: false
+    turn_off_action: *door_toggle_action
+    lambda: return id(lid_closed);
   - platform: template
     name: "Cooling Enabled"
     id: cooling_enabled
