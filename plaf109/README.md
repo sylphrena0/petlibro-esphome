@@ -22,6 +22,8 @@ Functions:
 - daily feeding schedule, stored on-device
   - feeds front plate, then rotates AFTER meal
   - uses same flow as manual feed, no special handling
+  - warns when a scheduled meal is missed (plate is not rotate in this case)
+    - warning survives reboots, is cleared at midnight or by a successful manual feed
 - open/close lid
   - will only close when pet is not present
   - using encoder to ensure lid opens/closes fully
@@ -48,6 +50,8 @@ Sensors:
 ### To-Do
 
 - use of motor current to detect stall
+- maybe warn when a manual plate rotation offsets the feeding schedule
+- scheduled meals will not trigger if set in close proximity (under 10-15m apart), maybe queue?
 - better calibration of temp sensor, if possible
 - bring some features to other devices
 - support for feeding schedules for multiple days

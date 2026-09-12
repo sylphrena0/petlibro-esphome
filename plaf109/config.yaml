@@ -108,6 +108,10 @@ globals:
     type: bool
     restore_value: no
     initial_value: 'false'
+  - id: missed_meal_warning
+    type: bool
+    restore_value: yes
+    initial_value: 'false'
 
 time:
   - platform: sntp
@@ -120,6 +124,7 @@ time:
           - lambda: |-
               id(visit_count) = 0;
               id(total_visit_seconds) = 0;
+              id(missed_meal_warning) = false;
               id(last_visit_duration).publish_state(0);
           - component.update: pet_visit_count
           - component.update: pet_total_time
@@ -182,6 +187,8 @@ script:
       - switch.turn_off: door_grating_sensor_power
   - id: feed_script
     mode: single
+    parameters:
+      manual: bool
     then:
       - button.press: chime
       - if:
@@ -207,10 +214,28 @@ script:
                 format: "pet has finished feeding"
                 tag: feeding
             - button.press: rotate_plate  # rotate only after feeding
+            - if:  # a manual feed catches the plate back up
+                condition:
+                  lambda: return manual && id(missed_meal_warning);
+                then:
+                  - logger.log:
+                      format: "manual feed caught the plate up, clearing missed meal warning"
+                      level: INFO
+                      tag: feeding
+                  - lambda: id(missed_meal_warning) = false;
           else:
             - logger.log:
                 format: "pet did not come for meal in ten minute window"
                 tag: feeding
+            - if:
+                condition:
+                  lambda: return !manual;
+                then:
+                  - logger.log:
+                      format: "scheduled meal missed, so plate was not rotated"
+                      level: WARN
+                      tag: feeding
+                  - lambda: id(missed_meal_warning) = true;
       - if:  # user may have closed lid early
           condition:
             lambda: return !id(lid_closed);
@@ -631,6 +656,14 @@ binary_sensor:
     id: presence_detector_three_minutes  # super debounced copy for feed script
     filters:
       - delayed_off: 3min
+  - platform: template
+    name: "Missed Meal"
+    id: missed_meal_warning_sensor
+    icon: "mdi:food-off"
+    device_class: problem
+    web_server:
+      sorting_group_id: feed
+    lambda: return id(missed_meal_warning);
   - platform: gpio
     id: plate_grating_raw
     internal: true
@@ -770,7 +803,9 @@ button:
       sorting_group_id: feed
     on_press:
       then:
-        - script.execute: feed_script
+        - script.execute:
+            id: feed_script
+            manual: true
 
 select:
   - platform: template
@@ -823,7 +858,9 @@ datetime:
           condition:
             switch.is_on: feeding_schedule_enabled
           then:
-            - script.execute: feed_script
+            - script.execute:
+                id: feed_script
+                manual: false
 
   - platform: template
     name: "Meal Two"
