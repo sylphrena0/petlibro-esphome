@@ -42,7 +42,6 @@ Sensors:
   - not confident in this number, may need more calibration
   - uses factory formula
 
-
 ### To-Do
 
 - use of motor current to detect stall
