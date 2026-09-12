@@ -84,10 +84,6 @@ globals:
   - id: lid_closed
     type: bool
     initial_value: "false"
-  - id: status_led_mode
-    type: int
-    restore_value: no
-    initial_value: "1"
   - id: visit_count
     type: int
     restore_value: yes
@@ -120,36 +116,23 @@ time:
           - component.update: pet_total_time
 
 script:
-  - id: status_led_pulse
+  - id: status_led_alternate
     mode: restart
-    parameters:
-      pattern: int
     then:
       - while:
           condition:
-            lambda: return id(status_led_mode) == pattern;
+            lambda: return true;
           then:
-            - if:
-                condition:
-                  lambda: return pattern == 3 || pattern == 5;
-                then:
-                  - switch.turn_off: led_red_pin
-                  - switch.turn_on: led_white_pin
-                  - delay: 1s
-                  - switch.turn_off: led_white_pin
-            - if:
-                condition:
-                  lambda: return pattern == 4 || pattern == 5;
-                then:
-                  - switch.turn_off: led_white_pin
-                  - switch.turn_on: led_red_pin
-                  - delay: 1s
-                  - switch.turn_off: led_red_pin
-            - if:
-                condition:
-                  lambda: return pattern == 3 || pattern == 4;
-                then:
-                  - delay: 1s
+            - light.turn_off: led_red
+            - light.turn_on:
+                id: led_white
+                effect: none
+            - delay: 1s
+            - light.turn_off: led_white
+            - light.turn_on:
+                id: led_red
+                effect: none
+            - delay: 1s
   - id: door_toggle
     mode: single
     then:
@@ -246,27 +229,43 @@ output:
     pin: GPIO2
     frequency: 38000Hz   # confirmed: matches standard IR-remote carrier freq
     max_power: 50%
-switch:
   - platform: gpio
-    id: led_white_pin
-    internal: true
-    restore_mode: ALWAYS_ON
+    id: led_white_output
     pin:
       aw9523: expander
       number: 9
       mode:
         output: true
-    interlock: [led_red_pin]
   - platform: gpio
-    id: led_red_pin
-    internal: true
-    restore_mode: ALWAYS_OFF
+    id: led_red_output
     pin:
       aw9523: expander
       number: 8
       mode:
         output: true
-    interlock: [led_white_pin]
+
+light:
+  - platform: binary
+    id: led_white
+    output: led_white_output
+    internal: true
+    restore_mode: ALWAYS_ON  # matches the select's initial_option
+    effects: &led_effects
+      - strobe:
+          name: Pulse
+          colors:
+            - state: true
+              duration: 1s
+            - state: false
+              duration: 1s
+  - platform: binary
+    id: led_red
+    output: led_red_output
+    internal: true
+    restore_mode: ALWAYS_OFF
+    effects: *led_effects
+
+switch:
   - platform: gpio
     id: lid_open_pin
     internal: true
@@ -778,53 +777,22 @@ select:
       - "Red / White pulse"
 
     set_action:
-      # Stop any active loop before changing LED state.
-      - script.stop: status_led_pulse
-      - if:
-          condition:
-            lambda: 'return x == "Off";'
-          then:
-            - lambda: 'id(status_led_mode) = 0;'
-            - switch.turn_off: led_white_pin
-            - switch.turn_off: led_red_pin
-      - if:
-          condition:
-            lambda: 'return x == "White";'
-          then:
-            - lambda: 'id(status_led_mode) = 1;'
-            - switch.turn_off: led_red_pin
-            - switch.turn_on: led_white_pin
-      - if:
-          condition:
-            lambda: 'return x == "Red";'
-          then:
-            - lambda: 'id(status_led_mode) = 2;'
-            - switch.turn_off: led_white_pin
-            - switch.turn_on: led_red_pin
-      - if:
-          condition:
-            lambda: 'return x == "White pulse";'
-          then:
-            - lambda: 'id(status_led_mode) = 3;'
-            - script.execute:
-                id: status_led_pulse
-                pattern: 3
-      - if:
-          condition:
-            lambda: 'return x == "Red pulse";'
-          then:
-            - lambda: 'id(status_led_mode) = 4;'
-            - script.execute:
-                id: status_led_pulse
-                pattern: 4
-      - if:
-          condition:
-            lambda: 'return x == "Red / White pulse";'
-          then:
-            - lambda: 'id(status_led_mode) = 5;'
-            - script.execute:
-                id: status_led_pulse
-                pattern: 5
+      # Stop any active alternation before changing LED state.
+      - script.stop: status_led_alternate
+      - lambda: |-
+          id(led_white).turn_off().perform();
+          id(led_red).turn_off().perform();
+          if (x == "White") {
+            id(led_white).turn_on().set_effect("none").perform();
+          } else if (x == "Red") {
+            id(led_red).turn_on().set_effect("none").perform();
+          } else if (x == "White pulse") {
+            id(led_white).turn_on().set_effect("Pulse").perform();
+          } else if (x == "Red pulse") {
+            id(led_red).turn_on().set_effect("Pulse").perform();
+          } else if (x == "Red / White pulse") {
+            id(status_led_alternate).execute();
+          }
 
 datetime:
   - platform: template
