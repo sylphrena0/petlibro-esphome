@@ -608,6 +608,7 @@ binary_sensor:
                   float duration_s = (millis() - id(visit_start_time)) / 1000.0;
                   id(total_visit_seconds) += duration_s;
                   id(last_visit_duration).publish_state(duration_s);
+                  id(pet_total_time).publish_state(id(total_visit_seconds));
                   id(visit_in_progress) = false;
                 }
   - platform: copy
