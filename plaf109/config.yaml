@@ -46,20 +46,20 @@ web_server:
     - id: core
       name: "Door & Plate"
       sorting_weight: 10
-    - id: cooling
-      name: "Cooling"
+    - id: feed
+      name: "Feed Plans"
       sorting_weight: 20
     - id: presence
       name: "Pet Presence"
       sorting_weight: 30
+    - id: cooling
+      name: "Cooling"
+      sorting_weight: 40
     - id: power
       name: "Power"
-      sorting_weight: 40
-    - id: feed
-      name: "Feed Plans"
       sorting_weight: 50
-    - id: diagnostics
-      name: "Diagnostics"
+    - id: miscellaneous
+      name: "Miscellaneous"
       sorting_weight: 60
 
 debug:
@@ -459,7 +459,7 @@ sensor:
     id: door_motor_current
     icon: "mdi:current-dc"
     web_server:
-      sorting_group_id: diagnostics
+      sorting_group_id: miscellaneous
     update_interval: 500ms
     attenuation: auto
     filters:
@@ -473,7 +473,7 @@ sensor:
   #   id: plate_motor_current
   #   icon: "mdi:current-dc"
   #   web_server:
-  #     sorting_group_id: diagnostics
+  #     sorting_group_id: miscellaneous
   #   update_interval: 500ms
   #   attenuation: auto
   #   filters:
@@ -611,7 +611,7 @@ binary_sensor:
     id: plate_grating_raw
     internal: true
     web_server:
-      sorting_group_id: diagnostics
+      sorting_group_id: miscellaneous
     pin:
       number: 10
       mode:
@@ -631,7 +631,7 @@ binary_sensor:
   - platform: gpio
     id: door_grating_raw
     web_server:
-      sorting_group_id: diagnostics
+      sorting_group_id: miscellaneous
     internal: true
     pin:
       number: 19
@@ -653,7 +653,7 @@ text_sensor:
     name: "Hardware Version"
     icon: "mdi:tag-outline"
     web_server:
-      sorting_group_id: diagnostics
+      sorting_group_id: miscellaneous
     update_interval: never
     internal: true
     # P0_0/P0_1 (AW9523 IN_P0 bits 0-1) are a fixed hardware-revision
@@ -755,6 +755,8 @@ select:
     name: "Status LED"
     id: status_led
     icon: "mdi:led-on"
+    web_server:
+      sorting_group_id: miscellaneous
     optimistic: true
     restore_value: false
     initial_option: "White"
