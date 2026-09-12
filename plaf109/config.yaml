@@ -77,6 +77,10 @@ aw9523:
   id: expander
 
 globals:
+  - id: reset_button_press_start
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
   - id: lid_closed
     type: bool
     initial_value: "false"
@@ -199,7 +203,7 @@ number:
     step: 1
     optimistic: true
     restore_value: true
-    initial_value: 40
+    initial_value: 55  # stock target is 13°C
 output:
   - platform: ledc
     id: presence_emitter
@@ -331,7 +335,7 @@ sensor:
     web_server:
       sorting_group_id: power
     update_interval: 30s
-    attenuation: auto
+    attenuation: 11dB
     internal: true
     filters:
       - multiply: 2.0
@@ -364,41 +368,47 @@ sensor:
           min_value: 0
           max_value: 100
   - platform: adc
-    name: "Chamber Temperature Raw"
-    id: temperature_raw
-    icon: "mdi:car-brake-temperature"
-    web_server:
-      sorting_group_id: diagnostics
     pin: GPIO1
-    update_interval: 10s
-    attenuation: auto
-    unit_of_measurement: "V"
-    device_class: voltage
-    state_class: measurement
-    accuracy_decimals: 3
-  - platform: copy
-    source_id: temperature_raw
+    id: chamber_temperature_voltage
+    attenuation: 11dB
+    update_interval: 30s
+    internal: true
+  - platform: resistance
+    id: chamber_temperature_resistance
+    sensor: chamber_temperature_voltage
+    configuration: DOWNSTREAM
+    resistor: 1kOhm
+    reference_voltage: 3.3V
+    internal: true
+  - platform: ntc
+    sensor: chamber_temperature_resistance
     name: "Chamber Temperature"
-    id: temperature
+    id: chamber_temperature
     icon: "mdi:coolant-temperature"
     web_server:
       sorting_group_id: cooling
+    internal: true  # using °F, if you prefer °C you can flip these
+    calibration:
+      b_constant: 3950
+      reference_temperature: 25°C
+      reference_resistance: 1kOhm
+  - platform: copy
+    source_id: chamber_temperature
+    id: chamber_temperature_f
+    icon: "mdi:coolant-temperature"
+    web_server:
+      sorting_group_id: cooling
+    name: "Chamber Temperature"
     unit_of_measurement: "°F"
-    device_class: temperature
-    state_class: measurement
     accuracy_decimals: 1
     filters:
-      - calibrate_linear:
-          datapoints:
-            - 1.679 -> 74.7
-            - 1.418 -> 87
-            - 1.339 -> 100
+      - lambda: return x * 9.0 / 5.0 + 32.0;
     on_value:
       then:
         - if:
             condition:
               - lambda: |
-                  return id(temperature).state >= id(cooling_target).state;
+                  return id(chamber_temperature_f).state >= id(cooling_target).state;
               - switch.is_on: cooling_enabled
               - binary_sensor.is_on: ac_power  # matches stock behavior
             then:
@@ -491,26 +501,27 @@ binary_sensor:
         - switch.turn_off: tec_control_pin
   - platform: gpio
     name: "Reset Button"
-    id: reset_button
     icon: "mdi:restart-alert"
     web_server:
       sorting_group_id: power
     pin:
-      number: 18
+      number: GPIO18
       mode:
         input: true
         pullup: true
       inverted: true
+    internal: true
+    filters:
+      - delayed_on: 25ms
     on_press:
-      - logger.log:
-          format: "reset_button: ON"
-          level: INFO
-          tag: events
+      - lambda: id(reset_button_press_start) = millis();
     on_release:
-      - logger.log:
-          format: "reset_button: OFF"
-          level: INFO
-          tag: events
+      - lambda: |-
+          uint32_t held = millis() - id(reset_button_press_start);
+          if (held >= 2000) {
+            ESP_LOGD("reset_button", "Triggering restart");
+            id(restart_button).press();
+          }
   - platform: gpio
     name: "Pet Present"
     id: presence_detector
@@ -618,6 +629,10 @@ text_sensor:
         return {"Unknown"};
       }
 button:
+  - platform: restart
+    name: "Restart"
+    id: restart_button
+    internal: true
   - platform: template
     name: "Play Chime"
     icon: "mdi:bell-ring"
