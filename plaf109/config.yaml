@@ -696,12 +696,13 @@ button:
     web_server:
       sorting_group_id: core
     on_press:
+      # stock firmware also sends 0xEF on feed plan reset, likely a command
       - lambda: |-
-          // 0xEF is also written in stock firmware, doesn't seem to do anything?
-          const bool bits[8] = {true, false, false, false, false, false, false, false};
+          const uint8_t byte = 0x01;
           id(chime_pin).turn_off();
           delay_microseconds_safe(5000);
-          for (bool bit : bits) {
+          for (int i = 0; i < 8; i++) {
+            const bool bit = (byte >> i) & 1;
             id(chime_pin).turn_on();
             delay_microseconds_safe(bit ? 3000 : 1000);
             id(chime_pin).turn_off();
