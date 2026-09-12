@@ -8,6 +8,8 @@ esphome:
     then:
       - output.turn_on: chime_pin
       - component.update: hardware_version
+      - component.update: pet_visit_count
+      - component.update: pet_total_time
       - script.execute:
           id: door_toggle
 
