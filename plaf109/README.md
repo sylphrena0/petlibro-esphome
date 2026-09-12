@@ -2,21 +2,23 @@
 
 ## Supported Features
 
-Sensors:
-
-- battery voltage sensor
-- reset button
-- ac power detection
-  - may take several seconds to update after unplugged
-- chamber temperature (**WIP**)
-  - currently uncalibrated and unsure if this varies between devices (*request for contribution*)
-
 Functions:
 
-- automatic cooling to target temperature (**WIP**)
+- reset button
+  - restarts esphome when held for more than 2s
+- automatic cooling to target temperature
   - option to manually disable cooling
   - automatically disables when power is lost to preserve power
-  - NOTE: unsure about the functionality of setting a target temperature, currently setting target is certainly not functional because of uncalibrated temperature sensor
+  - NOTE: unsure about the utility of setting a target temperature
+- feed now
+  - plays chime
+  - opens door, if not already open
+  - waits up to ten minutes for pet to arrive
+  - if pet arrived
+    - waits for pet to leave for at least three minutes, then closes door
+    - rotates plate
+  - logs if pet arrived or not
+  - closes door, if not manually closed
 - open/close lid
   - will only close when pet is not present
   - using encoder to ensure lid opens/closes fully
@@ -30,11 +32,23 @@ Functions:
   - at present, controlled manually
 - play chime
 
+Sensors:
+
+- battery voltage sensor
+  - displays charge percentage, using factory formula
+- ac power detection
+  - may take several seconds to update after unplugged
+- chamber temperature
+  - not confident in this number, may need more calibration
+  - uses factory formula
+
+
 ### To-Do
 
-- pinch sensor
 - use of motor current to detect stall
-- better calibration of temp sensor
+- better calibration of temp sensor, if possible
+- on-device feeding schedules
+- bring some features to other devices
 
 ## Disassembly
 

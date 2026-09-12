@@ -155,9 +155,9 @@ script:
     then:
       - lambda: id(lid_closed) = !id(lid_closed);
       - switch.turn_on: door_grating_sensor_power
-      - delay: 300ms  # wait for sensor power on
+      - delay: 300ms
       - if:
-          condition: &door-closed
+          condition: &lid-closed
             lambda: return id(lid_closed);
           then:
             - switch.turn_on: lid_close_pin
@@ -165,29 +165,65 @@ script:
             - switch.turn_on: lid_open_pin
       - wait_until:
           condition:
-            - binary_sensor.is_off: door_grating_raw
+            binary_sensor.is_off: door_grating_raw
           timeout: 800ms
-      - if:  # avoid stalling, if already at requested state, grate will not turn off
+      - if:
           condition:
-            - binary_sensor.is_on: door_grating_raw
+            binary_sensor.is_on: door_grating_raw
           then:
             - logger.log:
-                format: "grate did not turn off when toggling door"
+                format: grate did not turn off when toggling door
                 level: WARN
-                tag: 'lid'
+                tag: lid
           else:
             - wait_until:
                 condition:
-                  - binary_sensor.is_on: door_grating_raw
+                  binary_sensor.is_on: door_grating_raw
                 timeout: 6s
       - if:
-          condition: *door-closed
+          condition: *lid-closed
           then:
             - switch.turn_off: lid_close_pin
           else:
-            - delay: 200ms  # for some reason grate triggers early on open
+            - delay: 200ms
             - switch.turn_off: lid_open_pin
       - switch.turn_off: door_grating_sensor_power
+  - id: feed_script
+    mode: single
+    then:
+      - button.press: chime
+      - if:
+          condition: *lid-closed
+          then:
+            - script.execute: door_toggle
+      - wait_until:
+          condition:
+            binary_sensor.is_on: presence_detector
+          timeout: 10min
+      - if:
+          condition:
+            binary_sensor.is_on: presence_detector
+          then:
+            - logger.log:
+                format: "pet has arrived for feeding"
+                tag: feeding
+            - wait_until:
+                condition:
+                  # use super debounced version to allow pet time to eat
+                  - binary_sensor.is_off: presence_detector_three_minutes
+            - logger.log:
+                format: "pet has finished feeding"
+                tag: feeding
+            - button.press: rotate_plate  # rotate only after feeding
+          else:
+            - logger.log:
+                format: "pet did not come for meal in ten minute window"
+                tag: feeding
+      - if:  # user may have closed lid early
+          condition:
+            lambda: return !id(lid_closed);
+          then:
+            - script.execute: door_toggle
 
 number:
   - platform: template
@@ -323,6 +359,7 @@ switch:
     id: presence_emitter_switch
     output: presence_emitter
     icon: "mdi:lightbulb-cfl"
+    internal: true
     web_server:
       sorting_group_id: presence
     restore_mode: RESTORE_DEFAULT_ON
@@ -565,6 +602,11 @@ binary_sensor:
                   id(last_visit_duration).publish_state(duration_s);
                   id(visit_in_progress) = false;
                 }
+  - platform: copy
+    source_id: presence_detector
+    id: presence_detector_three_minutes  # super debounced copy for feed script
+    filters:
+      - delayed_off: 3min
   - platform: gpio
     id: plate_grating_raw
     internal: true
@@ -635,6 +677,7 @@ button:
     internal: true
   - platform: template
     name: "Play Chime"
+    id: chime
     icon: "mdi:bell-ring"
     web_server:
       sorting_group_id: core
@@ -655,7 +698,8 @@ button:
           }
           digitalWrite(6, HIGH);  // idle
   - platform: template
-    name: "Plate Rotate"
+    name: "Rotate Plate"
+    id: rotate_plate
     icon: "mdi:rotate-right-variant"
     web_server:
       sorting_group_id: core
@@ -697,6 +741,14 @@ button:
                         tag: 'lid'
             else:
               - switch.turn_off: toggle_door_closed
+  - platform: template
+    name: "Feed Now"
+    icon: "mdi:food-turkey"
+    web_server:
+      sorting_group_id: feed
+    on_press:
+      then:
+        - script.execute: feed_script
 
 select:
   - platform: template
