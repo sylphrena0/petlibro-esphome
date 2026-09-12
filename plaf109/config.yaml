@@ -327,16 +327,42 @@ sensor:
     pin: GPIO4
     name: "Battery Voltage"
     id: battery_voltage
-    icon: "mdi:battery"
+    icon: "mdi:battery-charging-outline"
     web_server:
       sorting_group_id: power
     update_interval: 30s
     attenuation: auto
+    internal: true
+    filters:
+      - multiply: 2.0
+  - platform: copy
+    source_id: battery_voltage
+    name: "Battery Percentage"
+    id: battery_percentage
+    icon: "mdi:battery"
+    web_server:
+      sorting_group_id: power
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    state_class: measurement
     filters:
       - calibrate_linear:
-          datapoints:
-            - 0.006 -> 0.0
-            - 2.54 -> 4.9
+          datapoints:  # calibration curve matching factory firmware
+            - 3.30 ->   0.0
+            - 3.42 ->  10.0
+            - 3.54 ->  20.0
+            - 3.66 ->  30.0
+            - 3.78 ->  40.0
+            - 3.90 ->  50.0
+            - 4.02 ->  60.0
+            - 4.14 ->  70.0
+            - 4.26 ->  80.0
+            - 4.38 ->  90.0
+            - 4.50 -> 100.0
+      - clamp:
+          min_value: 0
+          max_value: 100
   - platform: adc
     name: "Chamber Temperature Raw"
     id: temperature_raw
