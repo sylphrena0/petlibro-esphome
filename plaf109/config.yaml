@@ -379,7 +379,7 @@ sensor:
     web_server:
       sorting_group_id: power
     update_interval: 30s
-    attenuation: 11dB
+    attenuation: auto
     internal: true
     filters:
       - multiply: 2.0
@@ -414,7 +414,7 @@ sensor:
   - platform: adc
     pin: GPIO1
     id: chamber_temperature_voltage
-    attenuation: 11dB
+    attenuation: auto
     update_interval: 30s
     internal: true
   - platform: resistance
