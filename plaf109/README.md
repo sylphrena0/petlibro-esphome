@@ -19,6 +19,9 @@ Functions:
     - rotates plate
   - logs if pet arrived or not
   - closes door, if not manually closed
+- daily feeding schedule, stored on-device
+  - feeds front plate, then rotates AFTER meal
+  - uses same flow as manual feed, no special handling
 - open/close lid
   - will only close when pet is not present
   - using encoder to ensure lid opens/closes fully
@@ -39,15 +42,15 @@ Sensors:
 - ac power detection
   - may take several seconds to update after unplugged
 - chamber temperature
-  - not confident in this number, may need more calibration
+  - not confident this is accurate, may need more calibration
   - uses factory formula
 
 ### To-Do
 
 - use of motor current to detect stall
 - better calibration of temp sensor, if possible
-- on-device feeding schedules
 - bring some features to other devices
+- support for feeding schedules for multiple days
 
 ## Disassembly
 

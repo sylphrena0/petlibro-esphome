@@ -363,6 +363,14 @@ switch:
     web_server:
       sorting_group_id: presence
     restore_mode: RESTORE_DEFAULT_ON
+  - platform: template
+    name: "Feeding Schedule"
+    id: feeding_schedule_enabled
+    icon: "mdi:calendar-clock"
+    web_server:
+      sorting_group_id: feed
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
 sensor:
   - platform: adc
     pin: GPIO4
@@ -816,3 +824,42 @@ select:
             - script.execute:
                 id: status_led_pulse
                 pattern: 5
+
+datetime:
+  - platform: template
+    name: "Meal One"
+    id: meal_one
+    type: TIME
+    icon: "mdi:food-steak"
+    optimistic: true
+    restore_value: true
+    web_server:
+      sorting_group_id: feed
+    on_time: &feed
+      - if:
+          condition:
+            switch.is_on: feeding_schedule_enabled
+          then:
+            - script.execute: feed_script
+
+  - platform: template
+    name: "Meal Two"
+    id: meal_two
+    type: TIME
+    icon: "mdi:food-croissant"
+    optimistic: true
+    restore_value: true
+    web_server:
+      sorting_group_id: feed
+    on_time: *feed
+
+  - platform: template
+    name: "Meal Three"
+    id: meal_three
+    type: TIME
+    icon: "mdi:food-hot-dog"
+    optimistic: true
+    restore_value: true
+    web_server:
+      sorting_group_id: feed
+    on_time: *feed
