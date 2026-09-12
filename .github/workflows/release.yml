@@ -24,12 +24,32 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build changelog
+        id: changelog
+        uses: ardalanamini/auto-changelog@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          release-name: ${{ steps.tag_version.outputs.new_tag }}
+          default-commit-type: Other Changes
+          commit-types: |
+            feat: Features
+            fix: Bug Fixes
+            perf: Performance Improvements
+            revert: Reverts
+            refactor: Refactoring
+            docs: Documentation
+            style: Code Style
+            test: Tests
+            build: Build System & Dependencies
+            ci: Continuous Integration
+            chore: Chores
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.tag_version.outputs.new_tag }}
           name: ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
+          body: ${{ steps.changelog.outputs.changelog }}
 
       - name: Get major version tag
         id: major_tag
