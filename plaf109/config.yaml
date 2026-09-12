@@ -1,0 +1,816 @@
+# Board: ESP32-C3 DevKitM-1 (Espressif)
+# Definition: definitions/boards/esp32-c3-devkitm-1/manifest.yaml
+
+esphome:
+  name: plaf109
+  friendly_name: Polar Wet Food Feeder
+  on_boot:
+    then:
+      - component.update: hardware_version
+      - script.execute:
+          id: door_toggle
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  flash_size: 4MB
+  framework:
+    type: arduino
+
+logger:
+  level: DEBUG
+
+api:
+  encryption:
+    key: !secret plaf109__encryption_key
+ota:
+  - platform: esphome
+    password: !secret plaf109__ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: PLAF109 Fallback Hotspot
+    password: !secret plaf109__hotspot_password
+captive_portal:
+  id: plaf109_fallback
+web_server:
+  port: 80
+  version: 3
+  auth:
+    username: !secret plaf109__web_user
+    password: !secret plaf109__web_password
+    type: digest
+  sorting_groups:
+    - id: core
+      name: "Door & Plate"
+      sorting_weight: 10
+    - id: cooling
+      name: "Cooling"
+      sorting_weight: 20
+    - id: presence
+      name: "Pet Presence"
+      sorting_weight: 30
+    - id: power
+      name: "Power"
+      sorting_weight: 40
+    - id: feed
+      name: "Feed Plans"
+      sorting_weight: 50
+    - id: diagnostics
+      name: "Diagnostics"
+      sorting_weight: 60
+
+debug:
+
+i2c:
+  sda: GPIO7
+  scl: GPIO8
+  scan: false
+
+external_components:
+  - source: github://jenscski/esphome-components@main
+    components: [aw9523]
+
+aw9523:
+  id: expander
+
+globals:
+  - id: reset_button_press_start
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: lid_closed
+    type: bool
+    initial_value: "false"
+  - id: status_led_mode
+    type: int
+    restore_value: no
+    initial_value: "1"
+  - id: visit_count
+    type: int
+    restore_value: yes
+    initial_value: '0'
+  - id: total_visit_seconds
+    type: float
+    restore_value: yes
+    initial_value: '0'
+  - id: visit_start_time
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: visit_in_progress
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+time:
+  - platform: sntp
+    id: sntp_time
+    on_time:
+      - seconds: 0
+        minutes: 0
+        hours: 0
+        then:
+          - lambda: |-
+              id(visit_count) = 0;
+              id(total_visit_seconds) = 0;
+          - component.update: pet_visit_count
+          - component.update: pet_total_time
+
+script:
+  - id: status_led_pulse
+    mode: restart
+    parameters:
+      pattern: int
+    then:
+      - while:
+          condition:
+            lambda: return id(status_led_mode) == pattern;
+          then:
+            - if:
+                condition:
+                  lambda: return pattern == 3 || pattern == 5;
+                then:
+                  - switch.turn_off: led_red_pin
+                  - switch.turn_on: led_white_pin
+                  - delay: 1s
+                  - switch.turn_off: led_white_pin
+            - if:
+                condition:
+                  lambda: return pattern == 4 || pattern == 5;
+                then:
+                  - switch.turn_off: led_white_pin
+                  - switch.turn_on: led_red_pin
+                  - delay: 1s
+                  - switch.turn_off: led_red_pin
+            - if:
+                condition:
+                  lambda: return pattern == 3 || pattern == 4;
+                then:
+                  - delay: 1s
+  - id: door_toggle
+    mode: single
+    then:
+      - lambda: id(lid_closed) = !id(lid_closed);
+      - switch.turn_on: door_grating_sensor_power
+      - delay: 300ms
+      - if:
+          condition: &lid-closed
+            lambda: return id(lid_closed);
+          then:
+            - switch.turn_on: lid_close_pin
+          else:
+            - switch.turn_on: lid_open_pin
+      - wait_until:
+          condition:
+            binary_sensor.is_off: door_grating_raw
+          timeout: 800ms
+      - if:
+          condition:
+            binary_sensor.is_on: door_grating_raw
+          then:
+            - logger.log:
+                format: grate did not turn off when toggling door
+                level: WARN
+                tag: lid
+          else:
+            - wait_until:
+                condition:
+                  binary_sensor.is_on: door_grating_raw
+                timeout: 6s
+      - if:
+          condition: *lid-closed
+          then:
+            - switch.turn_off: lid_close_pin
+          else:
+            - delay: 200ms
+            - switch.turn_off: lid_open_pin
+      - switch.turn_off: door_grating_sensor_power
+  - id: feed_script
+    mode: single
+    then:
+      - button.press: chime
+      - if:
+          condition: *lid-closed
+          then:
+            - script.execute: door_toggle
+      - wait_until:
+          condition:
+            binary_sensor.is_on: presence_detector
+          timeout: 10min
+      - if:
+          condition:
+            binary_sensor.is_on: presence_detector
+          then:
+            - logger.log:
+                format: "pet has arrived for feeding"
+                tag: feeding
+            - wait_until:
+                condition:
+                  # use super debounced version to allow pet time to eat
+                  - binary_sensor.is_off: presence_detector_three_minutes
+            - logger.log:
+                format: "pet has finished feeding"
+                tag: feeding
+            - button.press: rotate_plate  # rotate only after feeding
+          else:
+            - logger.log:
+                format: "pet did not come for meal in ten minute window"
+                tag: feeding
+      - if:  # user may have closed lid early
+          condition:
+            lambda: return !id(lid_closed);
+          then:
+            - script.execute: door_toggle
+
+number:
+  - platform: template
+    name: "Food Cooling Target"
+    id: cooling_target
+    icon: "mdi:thermometer-chevron-down"
+    web_server:
+      sorting_group_id: cooling
+    unit_of_measurement: "°F"
+    device_class: temperature
+    min_value: 30
+    max_value: 70
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 55  # stock target is 13°C
+output:
+  - platform: ledc
+    id: presence_emitter
+    pin: GPIO2
+    frequency: 38000Hz   # confirmed: matches standard IR-remote carrier freq
+    max_power: 50%
+switch:
+  - platform: gpio
+    id: led_white_pin
+    internal: true
+    restore_mode: ALWAYS_ON
+    pin:
+      aw9523: expander
+      number: 9
+      mode:
+        output: true
+    interlock: [led_red_pin]
+  - platform: gpio
+    id: led_red_pin
+    internal: true
+    restore_mode: ALWAYS_OFF
+    pin:
+      aw9523: expander
+      number: 8
+      mode:
+        output: true
+    interlock: [led_white_pin]
+  - platform: gpio
+    id: lid_open_pin
+    internal: true
+    restore_mode: ALWAYS_OFF
+    pin:
+      aw9523: expander
+      number: 15
+      mode:
+        output: true
+      inverted: true
+    interlock: [lid_close_pin]
+    interlock_wait_time: 250ms
+  - platform: gpio
+    id: lid_close_pin
+    internal: true
+    restore_mode: ALWAYS_OFF
+    pin:
+      aw9523: expander
+      number: 14
+      mode:
+        output: true
+      inverted: true
+    interlock: [lid_open_pin]
+    interlock_wait_time: 250ms
+  - platform: gpio
+    id: plate_p0_5
+    internal: true
+    restore_mode: ALWAYS_ON
+    pin:
+      aw9523: expander
+      number: 5
+      mode:
+        output: true
+  - platform: gpio
+    id: plate_p0_6
+    internal: true
+    pin:
+      aw9523: expander
+      number: 6
+      mode:
+        output: true
+      inverted: true
+  - platform: gpio
+    id: plate_grating_sensor_power
+    restore_mode: ALWAYS_OFF  # disable when not in use to save battery
+    pin:
+      aw9523: expander
+      number: 4
+      mode:
+        output: true
+    internal: true
+  - platform: gpio
+    id: door_grating_sensor_power
+    restore_mode: ALWAYS_ON  # disable when not in use to save battery
+    pin:
+      aw9523: expander
+      number: 7
+      mode:
+        output: true
+    internal: true
+  - platform: gpio
+    id: tec_control_pin
+    internal: true
+    restore_mode: ALWAYS_OFF  # after first valid temp from sensor, will toggle on
+    pin:
+      aw9523: expander
+      number: 12
+      mode:
+        output: true
+  - platform: template
+    id: toggle_door_closed
+    internal: true
+    turn_on_action: &door_toggle_action
+      - script.execute:
+          id: door_toggle
+    turn_off_action: *door_toggle_action
+    lambda: return id(lid_closed);
+  - platform: template
+    name: "Cooling Enabled"
+    id: cooling_enabled
+    icon: "mdi:snowflake"
+    web_server:
+      sorting_group_id: cooling
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_off_action:
+      - switch.turn_off: tec_control_pin
+    optimistic: true
+  - platform: output
+    name: "Presence Emitter"
+    id: presence_emitter_switch
+    output: presence_emitter
+    icon: "mdi:lightbulb-cfl"
+    internal: true
+    web_server:
+      sorting_group_id: presence
+    restore_mode: RESTORE_DEFAULT_ON
+sensor:
+  - platform: adc
+    pin: GPIO4
+    name: "Battery Voltage"
+    id: battery_voltage
+    icon: "mdi:battery-charging-outline"
+    web_server:
+      sorting_group_id: power
+    update_interval: 30s
+    attenuation: 11dB
+    internal: true
+    filters:
+      - multiply: 2.0
+  - platform: copy
+    source_id: battery_voltage
+    name: "Battery Percentage"
+    id: battery_percentage
+    icon: "mdi:battery"
+    web_server:
+      sorting_group_id: power
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    state_class: measurement
+    filters:
+      - calibrate_linear:
+          datapoints:  # calibration curve matching factory firmware
+            - 3.30 ->   0.0
+            - 3.42 ->  10.0
+            - 3.54 ->  20.0
+            - 3.66 ->  30.0
+            - 3.78 ->  40.0
+            - 3.90 ->  50.0
+            - 4.02 ->  60.0
+            - 4.14 ->  70.0
+            - 4.26 ->  80.0
+            - 4.38 ->  90.0
+            - 4.50 -> 100.0
+      - clamp:
+          min_value: 0
+          max_value: 100
+  - platform: adc
+    pin: GPIO1
+    id: chamber_temperature_voltage
+    attenuation: 11dB
+    update_interval: 30s
+    internal: true
+  - platform: resistance
+    id: chamber_temperature_resistance
+    sensor: chamber_temperature_voltage
+    configuration: DOWNSTREAM
+    resistor: 1kOhm
+    reference_voltage: 3.3V
+    internal: true
+  - platform: ntc
+    sensor: chamber_temperature_resistance
+    name: "Chamber Temperature"
+    id: chamber_temperature
+    icon: "mdi:coolant-temperature"
+    web_server:
+      sorting_group_id: cooling
+    internal: true  # using °F, if you prefer °C you can flip these
+    calibration:
+      b_constant: 3950
+      reference_temperature: 25°C
+      reference_resistance: 1kOhm
+  - platform: copy
+    source_id: chamber_temperature
+    id: chamber_temperature_f
+    icon: "mdi:coolant-temperature"
+    web_server:
+      sorting_group_id: cooling
+    name: "Chamber Temperature"
+    unit_of_measurement: "°F"
+    accuracy_decimals: 1
+    filters:
+      - lambda: return x * 9.0 / 5.0 + 32.0;
+    on_value:
+      then:
+        - if:
+            condition:
+              - lambda: |
+                  return id(chamber_temperature_f).state >= id(cooling_target).state;
+              - switch.is_on: cooling_enabled
+              - binary_sensor.is_on: ac_power  # matches stock behavior
+            then:
+              - switch.turn_on: tec_control_pin
+            else:
+              - switch.turn_off: tec_control_pin
+
+  - platform: adc
+    pin: GPIO3
+    name: "Door Motor Current"
+    id: door_motor_current
+    icon: "mdi:current-dc"
+    web_server:
+      sorting_group_id: diagnostics
+    update_interval: 500ms
+    attenuation: auto
+    filters:
+      - multiply: 1000
+    unit_of_measurement: mV
+    accuracy_decimals: 0
+  # included here for reference: might interfere with wifi?
+  # - platform: adc
+  #   pin: GPIO5
+  #   name: "Plate Motor Current"
+  #   id: plate_motor_current
+  #   icon: "mdi:current-dc"
+  #   web_server:
+  #     sorting_group_id: diagnostics
+  #   update_interval: 500ms
+  #   attenuation: auto
+  #   filters:
+  #     - multiply: 1000
+  #   unit_of_measurement: mV
+  #   accuracy_decimals: 0
+  - platform: template
+    name: "Pet Visit Count"
+    id: pet_visit_count
+    icon: "mdi:paw"
+    web_server:
+      sorting_group_id: presence
+    accuracy_decimals: 0
+    state_class: total_increasing
+    update_interval: never
+    lambda: 'return id(visit_count);'
+
+  - platform: template
+    name: "Last Visit Duration"
+    id: last_visit_duration
+    icon: "mdi:timer-sand"
+    web_server:
+      sorting_group_id: presence
+    unit_of_measurement: "s"
+    accuracy_decimals: 1
+
+  - platform: template
+    name: "Total Time At Feeder"
+    id: pet_total_time
+    icon: "mdi:timer-sand-full"
+    web_server:
+      sorting_group_id: presence
+    unit_of_measurement: "s"
+    accuracy_decimals: 0
+    state_class: total_increasing
+    update_interval: never
+    lambda: 'return id(total_visit_seconds);'
+binary_sensor:
+  - platform: gpio
+    name: "AC Power Present"
+    id: ac_power
+    icon: "mdi:cable-data"
+    web_server:
+      sorting_group_id: power
+    pin:
+      number: 0
+      mode:
+        input: true
+    filters:
+      - invert   # firmware reads LOW = AC present; invert so the entity reads ON when plugged in
+    on_press:
+      - logger.log:
+          format: "AC Power reconnected"
+          level: INFO
+          tag: events
+    on_release:
+      then:
+        - logger.log:
+            format: "AC Power disconnected, disabling cooling to preserve battery"
+            level: WARN
+            tag: events
+        - switch.turn_off: tec_control_pin
+  - platform: gpio
+    name: "Reset Button"
+    icon: "mdi:restart-alert"
+    web_server:
+      sorting_group_id: power
+    pin:
+      number: GPIO18
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    internal: true
+    filters:
+      - delayed_on: 25ms
+    on_press:
+      - lambda: id(reset_button_press_start) = millis();
+    on_release:
+      - lambda: |-
+          uint32_t held = millis() - id(reset_button_press_start);
+          if (held >= 2000) {
+            ESP_LOGD("reset_button", "Triggering restart");
+            id(restart_button).press();
+          }
+  - platform: gpio
+    name: "Pet Present"
+    id: presence_detector
+    icon: "mdi:waveform"
+    web_server:
+      sorting_group_id: presence
+    pin:
+      number: 20
+      mode:
+        input: true
+    filters:
+      - delayed_on: 1s  # acts as debounce for a cat that just walks by
+      - delayed_off: 3s  # sensor is not super long-range, maybe the cat just takes a second between bites...
+    on_press:
+      - if:
+          condition:
+            switch.is_on: presence_emitter_switch
+          then:
+            - logger.log:
+                format: "presence_detector: ON"
+                level: INFO
+                tag: sensors
+            - lambda: |-
+                id(visit_start_time) = millis();
+                id(visit_in_progress) = true;
+                id(visit_count) += 1;
+            - component.update: pet_visit_count
+    on_release:
+      - if:
+          condition:
+            switch.is_on: presence_emitter_switch
+          then:
+            - logger.log:
+                format: "presence_detector: OFF"
+                level: INFO
+                tag: sensors
+            - lambda: |-
+                if (id(visit_in_progress)) {
+                  float duration_s = (millis() - id(visit_start_time)) / 1000.0;
+                  id(total_visit_seconds) += duration_s;
+                  id(last_visit_duration).publish_state(duration_s);
+                  id(visit_in_progress) = false;
+                }
+  - platform: copy
+    source_id: presence_detector
+    id: presence_detector_three_minutes  # super debounced copy for feed script
+    filters:
+      - delayed_off: 3min
+  - platform: gpio
+    id: plate_grating_raw
+    internal: true
+    web_server:
+      sorting_group_id: diagnostics
+    pin:
+      number: 10
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    on_press:
+      - logger.log:
+          format: "plate_grating_raw: ON"
+          level: DEBUG
+          tag: sensors
+    on_release:
+      - logger.log:
+          format: "plate_grating_raw: OFF"
+          level: DEBUG
+          tag: sensors
+  - platform: gpio
+    id: door_grating_raw
+    web_server:
+      sorting_group_id: diagnostics
+    internal: true
+    pin:
+      number: 19
+      mode:
+        input: true
+    on_press:
+      - logger.log:
+          format: "door_grating_raw: ON"
+          level: DEBUG
+          tag: sensors
+    on_release:
+      - logger.log:
+          format: "door_grating_raw: OFF"
+          level: DEBUG
+          tag: sensors
+text_sensor:
+  - platform: template
+    id: hardware_version
+    name: "Hardware Version"
+    icon: "mdi:tag-outline"
+    web_server:
+      sorting_group_id: diagnostics
+    update_interval: never
+    internal: true
+    # P0_0/P0_1 (AW9523 IN_P0 bits 0-1) are a fixed hardware-revision
+    # strap read once by the factory firmware's GetHardwareVersion
+    # not sure it's use
+    lambda: |-
+      const bool p0_0 = id(expander)->digital_read(0);
+      const bool p0_1 = id(expander)->digital_read(1);
+
+      if (!p0_0 && p0_1) {
+        return {"5.1.0"};
+      } else if (p0_0 && !p0_1) {
+        return {"5.2.0"};
+      } else {
+        return {"Unknown"};
+      }
+button:
+  - platform: restart
+    name: "Restart"
+    id: restart_button
+    internal: true
+  - platform: template
+    name: "Play Chime"
+    id: chime
+    icon: "mdi:bell-ring"
+    web_server:
+      sorting_group_id: core
+    on_press:
+      - lambda: |-
+          pinMode(6, OUTPUT);
+          digitalWrite(6, LOW);
+          delay(5);
+          int bits[8] = {1, 0, 0, 0, 0, 0, 0, 0}; // 0xEF is also written in stock firmware, doesn't seem to do anything?
+          for (int i = 0; i < 8; i++) {
+            if (bits[i]) {
+              digitalWrite(6, HIGH); delay(3);
+              digitalWrite(6, LOW);  delay(1);
+            } else {
+              digitalWrite(6, HIGH); delay(1);
+              digitalWrite(6, LOW);  delay(3);
+            }
+          }
+          digitalWrite(6, HIGH);  // idle
+  - platform: template
+    name: "Rotate Plate"
+    id: rotate_plate
+    icon: "mdi:rotate-right-variant"
+    web_server:
+      sorting_group_id: core
+    on_press:
+      - switch.turn_on: plate_grating_sensor_power
+      - switch.turn_on: plate_p0_5
+      - switch.turn_on: plate_p0_6
+      - wait_until:
+          condition:
+            binary_sensor.is_off: plate_grating_raw
+          timeout: 3400ms
+      - wait_until:
+          condition:
+            binary_sensor.is_on: plate_grating_raw
+          timeout: 3400ms
+      - switch.turn_off: plate_p0_6
+      - switch.turn_off: plate_grating_sensor_power
+  - platform: template
+    name: "Toggle Lid"
+    icon: "mdi:swap-vertical"
+    web_server:
+      sorting_group_id: core
+    on_press:
+      then:
+        - if:
+            condition:
+              - switch.is_off: toggle_door_closed
+            then:
+              - if:
+                  condition:
+                    or:
+                      - switch.is_off: presence_emitter_switch
+                      - binary_sensor.is_off: presence_detector
+                  then:
+                    - switch.turn_on: toggle_door_closed
+                  else:
+                    - logger.log:
+                        format: 'skipping close, presence detected'
+                        tag: 'lid'
+            else:
+              - switch.turn_off: toggle_door_closed
+  - platform: template
+    name: "Feed Now"
+    icon: "mdi:food-turkey"
+    web_server:
+      sorting_group_id: feed
+    on_press:
+      then:
+        - script.execute: feed_script
+
+select:
+  - platform: template
+    name: "Status LED"
+    id: status_led
+    icon: "mdi:led-on"
+    optimistic: true
+    restore_value: false
+    initial_option: "White"
+    options:
+      - "Off"
+      - "White"
+      - "Red"
+      - "White pulse"
+      - "Red pulse"
+      - "Red / White pulse"
+
+    set_action:
+      # Stop any active loop before changing LED state.
+      - script.stop: status_led_pulse
+      - if:
+          condition:
+            lambda: 'return x == "Off";'
+          then:
+            - lambda: 'id(status_led_mode) = 0;'
+            - switch.turn_off: led_white_pin
+            - switch.turn_off: led_red_pin
+      - if:
+          condition:
+            lambda: 'return x == "White";'
+          then:
+            - lambda: 'id(status_led_mode) = 1;'
+            - switch.turn_off: led_red_pin
+            - switch.turn_on: led_white_pin
+      - if:
+          condition:
+            lambda: 'return x == "Red";'
+          then:
+            - lambda: 'id(status_led_mode) = 2;'
+            - switch.turn_off: led_white_pin
+            - switch.turn_on: led_red_pin
+      - if:
+          condition:
+            lambda: 'return x == "White pulse";'
+          then:
+            - lambda: 'id(status_led_mode) = 3;'
+            - script.execute:
+                id: status_led_pulse
+                pattern: 3
+      - if:
+          condition:
+            lambda: 'return x == "Red pulse";'
+          then:
+            - lambda: 'id(status_led_mode) = 4;'
+            - script.execute:
+                id: status_led_pulse
+                pattern: 4
+      - if:
+          condition:
+            lambda: 'return x == "Red / White pulse";'
+          then:
+            - lambda: 'id(status_led_mode) = 5;'
+            - script.execute:
+                id: status_led_pulse
+                pattern: 5
