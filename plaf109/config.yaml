@@ -10,6 +10,7 @@ esphome:
       - component.update: hardware_version
       - component.update: pet_visit_count
       - component.update: pet_total_time
+      - component.update: last_visit_duration
       - script.execute:
           id: door_toggle
 
@@ -95,6 +96,10 @@ globals:
     type: float
     restore_value: yes
     initial_value: '0'
+  - id: last_visit_seconds
+    type: float
+    restore_value: yes
+    initial_value: '0'
   - id: visit_start_time
     type: uint32_t
     restore_value: no
@@ -115,6 +120,7 @@ time:
           - lambda: |-
               id(visit_count) = 0;
               id(total_visit_seconds) = 0;
+              id(last_visit_duration).publish_state(0);
           - component.update: pet_visit_count
           - component.update: pet_total_time
 
@@ -512,6 +518,10 @@ sensor:
       sorting_group_id: presence
     unit_of_measurement: "s"
     accuracy_decimals: 1
+    update_interval: never
+    lambda: 'return id(last_visit_seconds);'
+    on_value:
+      - lambda: 'id(last_visit_seconds) = x;'
 
   - platform: template
     name: "Total Time At Feeder"
