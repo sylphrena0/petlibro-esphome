@@ -6,6 +6,7 @@ esphome:
   friendly_name: Polar Wet Food Feeder
   on_boot:
     then:
+      - output.turn_on: chime_pin
       - component.update: hardware_version
       - script.execute:
           id: door_toggle
@@ -15,7 +16,7 @@ esp32:
   variant: esp32c3
   flash_size: 4MB
   framework:
-    type: arduino
+    type: esp-idf
 
 logger:
   level: DEBUG
@@ -227,8 +228,11 @@ output:
   - platform: ledc
     id: presence_emitter
     pin: GPIO2
-    frequency: 38000Hz   # confirmed: matches standard IR-remote carrier freq
+    frequency: 38000Hz
     max_power: 50%
+  - platform: gpio
+    id: chime_pin
+    pin: GPIO6
   - platform: gpio
     id: led_white_output
     pin:
@@ -691,20 +695,17 @@ button:
       sorting_group_id: core
     on_press:
       - lambda: |-
-          pinMode(6, OUTPUT);
-          digitalWrite(6, LOW);
-          delay(5);
-          int bits[8] = {1, 0, 0, 0, 0, 0, 0, 0}; // 0xEF is also written in stock firmware, doesn't seem to do anything?
-          for (int i = 0; i < 8; i++) {
-            if (bits[i]) {
-              digitalWrite(6, HIGH); delay(3);
-              digitalWrite(6, LOW);  delay(1);
-            } else {
-              digitalWrite(6, HIGH); delay(1);
-              digitalWrite(6, LOW);  delay(3);
-            }
+          // 0xEF is also written in stock firmware, doesn't seem to do anything?
+          const bool bits[8] = {true, false, false, false, false, false, false, false};
+          id(chime_pin).turn_off();
+          delay_microseconds_safe(5000);
+          for (bool bit : bits) {
+            id(chime_pin).turn_on();
+            delay_microseconds_safe(bit ? 3000 : 1000);
+            id(chime_pin).turn_off();
+            delay_microseconds_safe(bit ? 1000 : 3000);
           }
-          digitalWrite(6, HIGH);  // idle
+          id(chime_pin).turn_on();  // idle
   - platform: template
     name: "Rotate Plate"
     id: rotate_plate
