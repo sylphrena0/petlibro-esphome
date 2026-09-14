@@ -241,18 +241,11 @@ script:
                   - lambda: id(missed_meal_warning) = false;
           else:
             - logger.log:
-                format: "pet did not come for meal in %.0f minute window"
+                format: "pet did not come for meal in %.0f minute window, so plate was not rotated"
                 args: ['id(arrival_timeout).state']
+                level: WARN
                 tag: feeding
-            - if:
-                condition:
-                  lambda: return !manual;
-                then:
-                  - logger.log:
-                      format: "scheduled meal missed, so plate was not rotated"
-                      level: WARN
-                      tag: feeding
-                  - lambda: id(missed_meal_warning) = true;
+            - lambda: id(missed_meal_warning) = true;
       - if:  # user may have closed lid early
           condition:
             lambda: return !id(lid_closed);

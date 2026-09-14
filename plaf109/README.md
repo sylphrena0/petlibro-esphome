@@ -23,7 +23,7 @@ Functions:
 - daily feeding schedule, stored on-device
   - feeds front plate, then rotates AFTER meal
   - uses same flow as manual feed, no special handling
-  - warns when a scheduled meal is missed (plate is not rotate in this case)
+  - warns when a meal is missed (plate is not rotated in this case)
     - warning survives reboots, is cleared at midnight or by a successful manual feed
 - open/close lid
   - will only close when pet is not present
