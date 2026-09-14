@@ -808,6 +808,7 @@ button:
       sorting_group_id: core
     on_press:
       - switch.turn_on: plate_grating_sensor_power
+      - delay: 300ms  # observed flaky plate rotation that may be caused by grating power-up
       - switch.turn_on: plate_p0_5
       - switch.turn_on: plate_p0_6
       - wait_until:
