@@ -140,6 +140,7 @@ time:
               id(last_visit_duration).publish_state(0);
           - component.update: pet_visit_count
           - component.update: pet_total_time
+          - *apply-status-led
 
 script:
   - id: status_led_alternate
@@ -239,6 +240,7 @@ script:
                       level: INFO
                       tag: feeding
                   - lambda: id(missed_meal_warning) = false;
+                  - *apply-status-led
           else:
             - logger.log:
                 format: "pet did not come for meal in %.0f minute window, so plate was not rotated"
@@ -246,6 +248,7 @@ script:
                 level: WARN
                 tag: feeding
             - lambda: id(missed_meal_warning) = true;
+            - *apply-status-led
       - if:  # user may have closed lid early
           condition:
             lambda: return !id(lid_closed);
@@ -881,8 +884,13 @@ select:
       - lambda: |-
           id(led_white).turn_off().perform();
           id(led_red).turn_off().perform();
-          if (!wifi::global_wifi_component->is_connected()) {
+          const bool wifi_down = !wifi::global_wifi_component->is_connected();
+          if (wifi_down && id(missed_meal_warning)) {
+            id(status_led_alternate).execute();
+          } else if (wifi_down) {
             id(led_white).turn_on().set_effect("Pulse").perform();
+          } else if (id(missed_meal_warning)) {
+            id(led_red).turn_on().set_effect("Pulse").perform();
           } else if (x == "White") {
             id(led_white).turn_on().set_effect("none").perform();
           } else if (x == "Red") {
