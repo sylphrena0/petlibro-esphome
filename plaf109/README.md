@@ -13,9 +13,10 @@ Functions:
 - feed now
   - plays chime
   - opens door, if not already open
-  - waits up to ten minutes for pet to arrive
+  - waits for pet to arrive, up to a configurable timeout
   - if pet arrived
-    - waits for pet to leave for at least three minutes, then closes door
+    - keeps door open for a configurable minimum feeding time after arrival
+    - then waits for pet to be gone for a configurable delay before closing door
     - rotates plate
   - logs if pet arrived or not
   - closes door, if not manually closed

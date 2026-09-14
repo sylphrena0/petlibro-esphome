@@ -112,6 +112,10 @@ globals:
     type: bool
     restore_value: yes
     initial_value: 'false'
+  - id: pet_arrival_time
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
 
 time:
   - platform: sntp
@@ -198,7 +202,7 @@ script:
       - wait_until:
           condition:
             binary_sensor.is_on: presence_detector
-          timeout: 10min
+          timeout: !lambda return id(arrival_timeout).state * 60000;
       - if:
           condition:
             binary_sensor.is_on: presence_detector
@@ -206,10 +210,14 @@ script:
             - logger.log:
                 format: "pet has arrived for feeding"
                 tag: feeding
+            - lambda: id(pet_arrival_time) = millis();
+            - wait_until:
+                condition:
+                  lambda: return id(lid_closed) || millis() - id(pet_arrival_time) >= id(minimum_feeding_time).state * 60000;
             - wait_until:
                 condition:
                   # use super debounced version to allow pet time to eat
-                  - binary_sensor.is_off: presence_detector_three_minutes
+                  - binary_sensor.is_off: pet_recently_present
             - logger.log:
                 format: "pet has finished feeding"
                 tag: feeding
@@ -225,7 +233,8 @@ script:
                   - lambda: id(missed_meal_warning) = false;
           else:
             - logger.log:
-                format: "pet did not come for meal in ten minute window"
+                format: "pet did not come for meal in %.0f minute window"
+                args: ['id(arrival_timeout).state']
                 tag: feeding
             - if:
                 condition:
@@ -257,6 +266,45 @@ number:
     optimistic: true
     restore_value: true
     initial_value: 55  # stock target is 13°C
+  - platform: template
+    name: "Arrival Timeout"
+    id: arrival_timeout
+    icon: "mdi:timer-outline"
+    web_server:
+      sorting_group_id: feed
+    unit_of_measurement: min
+    min_value: 1
+    max_value: 60
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 10
+  - platform: template
+    name: "Minimum Feeding Time"
+    id: minimum_feeding_time
+    icon: "mdi:door-open"
+    web_server:
+      sorting_group_id: feed
+    unit_of_measurement: min
+    min_value: 0
+    max_value: 120
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 3
+  - platform: template
+    name: "Safe Close Delay"
+    id: safe_close_delay
+    icon: "mdi:timer-check-outline"
+    web_server:
+      sorting_group_id: feed
+    unit_of_measurement: s
+    min_value: 0
+    max_value: 60
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 30
 output:
   - platform: ledc
     id: presence_emitter
@@ -653,9 +701,9 @@ binary_sensor:
                 }
   - platform: copy
     source_id: presence_detector
-    id: presence_detector_three_minutes  # super debounced copy for feed script
+    id: pet_recently_present  # super debounced copy for feed script
     filters:
-      - delayed_off: 3min
+      - delayed_off: !lambda return id(safe_close_delay).state * 60000;
   - platform: template
     name: "Missed Meal"
     id: missed_meal_warning_sensor
