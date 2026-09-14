@@ -11,6 +11,10 @@ esphome:
       - component.update: pet_visit_count
       - component.update: pet_total_time
       - component.update: last_visit_duration
+      - &apply-status-led
+        select.set:
+          id: status_led
+          option: !lambda return id(status_led).current_option().str();
       - script.execute:
           id: door_toggle
 
@@ -37,6 +41,10 @@ wifi:
   ap:
     ssid: PLAF109 Fallback Hotspot
     password: !secret plaf109__hotspot_password
+  on_connect:
+    - *apply-status-led
+  on_disconnect:
+    - *apply-status-led
 captive_portal:
   id: plaf109_fallback
 web_server:
@@ -880,7 +888,9 @@ select:
       - lambda: |-
           id(led_white).turn_off().perform();
           id(led_red).turn_off().perform();
-          if (x == "White") {
+          if (!wifi::global_wifi_component->is_connected()) {
+            id(led_white).turn_on().set_effect("Pulse").perform();
+          } else if (x == "White") {
             id(led_white).turn_on().set_effect("none").perform();
           } else if (x == "Red") {
             id(led_red).turn_on().set_effect("none").perform();
