@@ -34,10 +34,10 @@ Functions:
   - daily visits and time at feeder
   - last visit duration
 - status led
-  - static red/white or pulsing in various patterns
-  - at present, controlled manually
-  - pulses white while wifi is disconnected, then returns to the selected mode
+  - switch turns the white led on or off
+  - pulses white while wifi is disconnected
   - pulses red while a missed meal warning is active, alternating red/white if wifi is also disconnected
+  - warnings override the switch
 - play chime
 
 Sensors:

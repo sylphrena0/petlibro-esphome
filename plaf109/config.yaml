@@ -12,9 +12,7 @@ esphome:
       - component.update: pet_total_time
       - component.update: last_visit_duration
       - &apply-status-led
-        select.set:
-          id: status_led
-          option: !lambda return id(status_led).current_option().str();
+        script.execute: apply_status_led
       - script.execute:
           id: door_toggle
 
@@ -160,6 +158,40 @@ script:
                 id: led_red
                 effect: none
             - delay: 1s
+  - id: apply_status_led
+    then:
+      - script.stop: status_led_alternate
+      - light.turn_off: led_white
+      - light.turn_off: led_red
+      - if:
+          condition:
+            not:
+              wifi.connected:
+          then:
+            - if:
+                condition: &missed-meal
+                  lambda: return id(missed_meal_warning);
+                then:
+                  - script.execute: status_led_alternate
+                else:
+                  - light.turn_on:
+                      id: led_white
+                      effect: Pulse
+          else:
+            - if:
+                condition: *missed-meal
+                then:
+                  - light.turn_on:
+                      id: led_red
+                      effect: Pulse
+                else:
+                  - if:
+                      condition:
+                        switch.is_on: status_led
+                      then:
+                        - light.turn_on:
+                            id: led_white
+                            effect: none
   - id: door_toggle
     mode: single
     then:
@@ -338,7 +370,7 @@ light:
     id: led_white
     output: led_white_output
     internal: true
-    restore_mode: ALWAYS_ON  # matches the select's initial_option
+    restore_mode: ALWAYS_ON  # matches the status led switch default
     effects: &led_effects
       - strobe:
           name: Pulse
@@ -459,6 +491,16 @@ switch:
       sorting_group_id: feed
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    name: "Status LED"
+    id: status_led
+    icon: "mdi:led-on"
+    web_server:
+      sorting_group_id: miscellaneous
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_state:
+      - *apply-status-led
 sensor:
   - platform: adc
     pin: GPIO4
@@ -859,49 +901,6 @@ button:
         - script.execute:
             id: feed_script
             manual: true
-
-select:
-  - platform: template
-    name: "Status LED"
-    id: status_led
-    icon: "mdi:led-on"
-    web_server:
-      sorting_group_id: miscellaneous
-    optimistic: true
-    restore_value: false
-    initial_option: "White"
-    options:
-      - "Off"
-      - "White"
-      - "Red"
-      - "White pulse"
-      - "Red pulse"
-      - "Red / White pulse"
-
-    set_action:
-      # Stop any active alternation before changing LED state.
-      - script.stop: status_led_alternate
-      - lambda: |-
-          id(led_white).turn_off().perform();
-          id(led_red).turn_off().perform();
-          const bool wifi_down = !wifi::global_wifi_component->is_connected();
-          if (wifi_down && id(missed_meal_warning)) {
-            id(status_led_alternate).execute();
-          } else if (wifi_down) {
-            id(led_white).turn_on().set_effect("Pulse").perform();
-          } else if (id(missed_meal_warning)) {
-            id(led_red).turn_on().set_effect("Pulse").perform();
-          } else if (x == "White") {
-            id(led_white).turn_on().set_effect("none").perform();
-          } else if (x == "Red") {
-            id(led_red).turn_on().set_effect("none").perform();
-          } else if (x == "White pulse") {
-            id(led_white).turn_on().set_effect("Pulse").perform();
-          } else if (x == "Red pulse") {
-            id(led_red).turn_on().set_effect("Pulse").perform();
-          } else if (x == "Red / White pulse") {
-            id(status_led_alternate).execute();
-          }
 
 datetime:
   - platform: template
