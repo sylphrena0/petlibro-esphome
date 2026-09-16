@@ -258,7 +258,7 @@ script:
             - wait_until:
                 condition:
                   # use super debounced version to allow pet time to eat
-                  - binary_sensor.is_off: pet_recently_present
+                  - binary_sensor.is_off: presence_detector # TEMP: test precense sensor instead of debounced version
             - logger.log:
                 format: "pet has finished feeding"
                 tag: feeding
