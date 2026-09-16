@@ -713,7 +713,7 @@ binary_sensor:
         input: true
     filters:
       - delayed_on: 1s  # acts as debounce for a cat that just walks by
-      - delayed_off: 3s  # sensor is not super long-range, maybe the cat just takes a second between bites...
+      - delayed_off: 10s  # sensor is not super long-range, maybe the cat just takes a second between bites...
     on_press:
       - if:
           condition:
