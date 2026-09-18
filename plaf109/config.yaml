@@ -31,7 +31,7 @@ api:
     key: !secret plaf109__encryption_key
 ota:
   - platform: esphome
-    password: !secret plaf109__ota_password
+    encryption:
 
 wifi:
   ssid: !secret wifi_ssid
@@ -43,6 +43,7 @@ wifi:
     - *apply-status-led
   on_disconnect:
     - *apply-status-led
+  fast_connect: true
 captive_portal:
   id: plaf109_fallback
 web_server:
@@ -254,14 +255,24 @@ script:
             - lambda: id(pet_arrival_time) = millis();
             - wait_until:
                 condition:
-                  lambda: return id(lid_closed) || millis() - id(pet_arrival_time) >= id(minimum_feeding_time).state * 60000;
+                  lambda: return id(lid_closed) || millis() - id(pet_arrival_time) >= (id(minimum_feeding_time).state * 60000);
+            - logger.log:
+                format: "configured feeding time is over, waiting till it is safe to close lid"
+                tag: feeding
             - wait_until:
                 condition:
-                  # use super debounced version to allow pet time to eat
-                  - binary_sensor.is_off: presence_detector # TEMP: test precense sensor instead of debounced version
+                  or:
+                    - lambda: 'return id(lid_closed);' # user may have closed lid early
+                    - binary_sensor.is_off: presence_detector # TEMP: test precense sensor instead of debounced version
             - logger.log:
                 format: "pet has finished feeding"
                 tag: feeding
+            - &close-lid # close lid before rotating
+              if:
+                condition: # user may have closed lid early
+                  lambda: return !id(lid_closed);
+                then:
+                  - script.execute: door_toggle
             - button.press: rotate_plate  # rotate only after feeding
             - if:  # a manual feed catches the plate back up
                 condition:
@@ -281,11 +292,7 @@ script:
                 tag: feeding
             - lambda: id(missed_meal_warning) = true;
             - *apply-status-led
-      - if:  # user may have closed lid early
-          condition:
-            lambda: return !id(lid_closed);
-          then:
-            - script.execute: door_toggle
+      - *close-lid
 
 number:
   - platform: template
@@ -602,6 +609,7 @@ sensor:
     attenuation: auto
     filters:
       - multiply: 1000
+      - delta: 5
     unit_of_measurement: mV
     accuracy_decimals: 0
   # included here for reference: might interfere with wifi?
@@ -745,11 +753,6 @@ binary_sensor:
                   id(pet_total_time).publish_state(id(total_visit_seconds));
                   id(visit_in_progress) = false;
                 }
-  - platform: copy
-    source_id: presence_detector
-    id: pet_recently_present  # super debounced copy for feed script
-    filters:
-      - delayed_off: !lambda return id(safe_close_delay).state * 60000;
   - platform: template
     name: "Missed Meal"
     id: missed_meal_warning_sensor
@@ -942,3 +945,9 @@ datetime:
     web_server:
       sorting_group_id: feed
     on_time: *feed
+
+# text_sensor:
+#   - platform: version
+#     name: "Firmware Version"
+#     web_server:
+#       sorting_group_id: miscellaneous
