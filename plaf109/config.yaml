@@ -260,8 +260,9 @@ script:
                 tag: feeding
             - wait_until:
                 condition:
-                  # use super debounced version to allow pet time to eat
-                  - binary_sensor.is_off: pet_recently_present
+                  or:
+                    - lambda: 'return id(lid_closed);'  # user may have closed lid early
+                    - binary_sensor.is_off: pet_recently_present
             - logger.log:
                 format: "pet has finished feeding"
                 tag: feeding
