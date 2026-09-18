@@ -266,6 +266,12 @@ script:
             - logger.log:
                 format: "pet has finished feeding"
                 tag: feeding
+            - &close-lid  # close lid before rotating
+              if:
+                condition:  # user may have closed lid early
+                  lambda: return !id(lid_closed);
+                then:
+                  - script.execute: door_toggle
             - button.press: rotate_plate  # rotate only after feeding
             - if:  # a manual feed catches the plate back up
                 condition:
@@ -285,11 +291,7 @@ script:
                 tag: feeding
             - lambda: id(missed_meal_warning) = true;
             - *apply-status-led
-      - if:  # user may have closed lid early
-          condition:
-            lambda: return !id(lid_closed);
-          then:
-            - script.execute: door_toggle
+      - *close-lid
 
 number:
   - platform: template
