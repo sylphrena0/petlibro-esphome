@@ -243,7 +243,7 @@ script:
       - wait_until:
           condition:
             binary_sensor.is_on: presence_detector
-          timeout: !lambda return id(arrival_timeout).state * 1000;
+          timeout: !lambda return id(arrival_timeout).state * 60000;
       - if:
           condition:
             binary_sensor.is_on: presence_detector
