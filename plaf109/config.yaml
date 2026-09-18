@@ -256,13 +256,13 @@ script:
                 condition:
                   lambda: return id(lid_closed) || millis() - id(pet_arrival_time) >= (id(minimum_feeding_time).state * 60000);
             - logger.log:
-                format: "configured feeding time is over, waiting till it is safe to close lid"
+                format: "configured feeding time is over"
                 tag: feeding
             - wait_until:
                 condition:
                   or:
                     - lambda: 'return id(lid_closed);'  # user may have closed lid early
-                    - binary_sensor.is_off: pet_recently_present
+                    - binary_sensor.is_off: presence_detector
             - logger.log:
                 format: "pet has finished feeding"
                 tag: feeding
@@ -334,19 +334,6 @@ number:
     optimistic: true
     restore_value: true
     initial_value: 3
-  - platform: template
-    name: "Safe Close Delay"
-    id: safe_close_delay
-    icon: "mdi:timer-check-outline"
-    web_server:
-      sorting_group_id: feed
-    unit_of_measurement: s
-    min_value: 0
-    max_value: 60
-    step: 1
-    optimistic: true
-    restore_value: true
-    initial_value: 30
 output:
   - platform: ledc
     id: presence_emitter
@@ -720,7 +707,7 @@ binary_sensor:
         input: true
     filters:
       - delayed_on: 1s  # acts as debounce for a cat that just walks by
-      - delayed_off: 3s  # sensor is not super long-range, maybe the cat just takes a second between bites...
+      - delayed_off: 10s  # sensor is not super long-range, maybe the cat just takes a second between bites...
     on_press:
       - if:
           condition:
@@ -752,11 +739,6 @@ binary_sensor:
                   id(pet_total_time).publish_state(id(total_visit_seconds));
                   id(visit_in_progress) = false;
                 }
-  - platform: copy
-    source_id: presence_detector
-    id: pet_recently_present  # super debounced copy for feed script
-    filters:
-      - delayed_off: !lambda return id(safe_close_delay).state * 60000;
   - platform: template
     name: "Missed Meal"
     id: missed_meal_warning_sensor
