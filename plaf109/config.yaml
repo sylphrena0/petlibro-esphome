@@ -31,7 +31,7 @@ api:
     key: !secret plaf109__encryption_key
 ota:
   - platform: esphome
-    password: !secret plaf109__ota_password
+    encryption:
 
 wifi:
   ssid: !secret wifi_ssid
