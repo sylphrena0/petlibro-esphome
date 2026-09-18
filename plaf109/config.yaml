@@ -608,6 +608,7 @@ sensor:
     attenuation: auto
     filters:
       - multiply: 1000
+      - delta: 5
     unit_of_measurement: mV
     accuracy_decimals: 0
   # included here for reference: might interfere with wifi?
