@@ -16,10 +16,11 @@ Functions:
   - waits for pet to arrive, up to a configurable timeout
   - if pet arrived
     - keeps door open for a configurable minimum feeding time after arrival
-    - then waits for pet to be gone for a configurable delay before closing door
+    - then waits up to 10s for pet to be leave
+    - closes door, if not manually closed
     - rotates plate
   - logs if pet arrived or not
-  - closes door, if not manually closed
+  - closes door, if not already closed
 - daily feeding schedule, stored on-device
   - feeds front plate, then rotates AFTER meal
   - uses same flow as manual feed, no special handling
