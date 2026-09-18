@@ -254,7 +254,10 @@ script:
             - lambda: id(pet_arrival_time) = millis();
             - wait_until:
                 condition:
-                  lambda: return id(lid_closed) || millis() - id(pet_arrival_time) >= id(minimum_feeding_time).state * 60000;
+                  lambda: return id(lid_closed) || millis() - id(pet_arrival_time) >= (id(minimum_feeding_time).state * 60000);
+            - logger.log:
+                format: "configured feeding time is over, waiting till it is safe to close lid"
+                tag: feeding
             - wait_until:
                 condition:
                   # use super debounced version to allow pet time to eat
