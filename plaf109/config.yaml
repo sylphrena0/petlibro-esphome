@@ -7,6 +7,7 @@ esphome:
   on_boot:
     then:
       - output.turn_on: chime_pin
+      - output.turn_on: presence_emitter
       - component.update: hardware_version
       - component.update: pet_visit_count
       - component.update: pet_total_time
@@ -473,15 +474,6 @@ switch:
     turn_off_action:
       - switch.turn_off: tec_control_pin
     optimistic: true
-  - platform: output
-    name: "Presence Emitter"
-    id: presence_emitter_switch
-    output: presence_emitter
-    icon: "mdi:lightbulb-cfl"
-    internal: true
-    web_server:
-      sorting_group_id: presence
-    restore_mode: RESTORE_DEFAULT_ON
   - platform: template
     name: "Feeding Schedule"
     id: feeding_schedule_enabled
@@ -715,41 +707,33 @@ binary_sensor:
       - delayed_on: 1s  # acts as debounce for a cat that just walks by
       - delayed_off: 10s  # sensor is not super long-range, maybe the cat just takes a second between bites...
     on_press:
-      - if:
-          condition:
-            switch.is_on: presence_emitter_switch
-          then:
-            - logger.log:
-                format: "presence_detector: ON"
-                level: INFO
-                tag: sensors
-            - lambda: |-
-                id(visit_start_time) = millis() - 1000;
-                id(visit_in_progress) = true;
-                id(visit_count) += 1;
-                auto now = id(sntp_time).now();
-                if (now.is_valid()) {
-                  id(last_visit_epoch) = now.timestamp - 1;
-                }
-            - component.update: pet_visit_count
-            - component.update: last_visit_time
+      - logger.log:
+          format: "presence_detector: ON"
+          level: INFO
+          tag: sensors
+      - lambda: |-
+          id(visit_start_time) = millis() - 1000;
+          id(visit_in_progress) = true;
+          id(visit_count) += 1;
+          auto now = id(sntp_time).now();
+          if (now.is_valid()) {
+            id(last_visit_epoch) = now.timestamp - 1;
+          }
+      - component.update: pet_visit_count
+      - component.update: last_visit_time
     on_release:
-      - if:
-          condition:
-            switch.is_on: presence_emitter_switch
-          then:
-            - logger.log:
-                format: "presence_detector: OFF"
-                level: INFO
-                tag: sensors
-            - lambda: |-
-                if (id(visit_in_progress)) {
-                  float duration_s = (millis() - id(visit_start_time) - 10000) / 1000.0;  // undo delayed_off
-                  id(total_visit_seconds) += duration_s;
-                  id(last_visit_duration).publish_state(duration_s);
-                  id(pet_total_time).publish_state(id(total_visit_seconds));
-                  id(visit_in_progress) = false;
-                }
+      - logger.log:
+          format: "presence_detector: OFF"
+          level: INFO
+          tag: sensors
+      - lambda: |-
+          if (id(visit_in_progress)) {
+            float duration_s = (millis() - id(visit_start_time) - 10000) / 1000.0;  // undo delayed_off
+            id(total_visit_seconds) += duration_s;
+            id(last_visit_duration).publish_state(duration_s);
+            id(pet_total_time).publish_state(id(total_visit_seconds));
+            id(visit_in_progress) = false;
+          }
   - platform: template
     name: "Missed Meal"
     id: missed_meal_warning_sensor
@@ -893,9 +877,7 @@ button:
             then:
               - if:
                   condition:
-                    or:
-                      - switch.is_off: presence_emitter_switch
-                      - binary_sensor.is_off: presence_detector
+                    binary_sensor.is_off: presence_detector
                   then:
                     - switch.turn_on: toggle_door_closed
                   else:
