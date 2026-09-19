@@ -277,6 +277,7 @@ script:
                   lambda: return !id(lid_closed);
                 then:
                   - script.execute: door_toggle
+            - script.wait: door_toggle
             - button.press: rotate_plate  # rotate only after feeding
             - if:  # a manual feed catches the plate back up
                 condition:
