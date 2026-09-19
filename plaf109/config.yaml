@@ -232,6 +232,23 @@ script:
             - delay: 200ms
             - switch.turn_off: lid_open_pin
       - switch.turn_off: door_grating_sensor_power
+  - id: plate_rotate
+    mode: single
+    then:
+      - switch.turn_on: plate_grating_sensor_power
+      - delay: 300ms  # observed flaky plate rotation that may be caused by grating power-up
+      - switch.turn_on: plate_p0_5
+      - switch.turn_on: plate_p0_6
+      - wait_until:
+          condition:
+            binary_sensor.is_off: plate_grating_raw
+          timeout: 3400ms
+      - wait_until:
+          condition:
+            binary_sensor.is_on: plate_grating_raw
+          timeout: 3400ms
+      - switch.turn_off: plate_p0_6
+      - switch.turn_off: plate_grating_sensor_power
   - id: feed_script
     mode: single
     parameters:
@@ -838,20 +855,7 @@ button:
     web_server:
       sorting_group_id: core
     on_press:
-      - switch.turn_on: plate_grating_sensor_power
-      - delay: 300ms  # observed flaky plate rotation that may be caused by grating power-up
-      - switch.turn_on: plate_p0_5
-      - switch.turn_on: plate_p0_6
-      - wait_until:
-          condition:
-            binary_sensor.is_off: plate_grating_raw
-          timeout: 3400ms
-      - wait_until:
-          condition:
-            binary_sensor.is_on: plate_grating_raw
-          timeout: 3400ms
-      - switch.turn_off: plate_p0_6
-      - switch.turn_off: plate_grating_sensor_power
+      - script.execute: plate_rotate
   - platform: template
     name: "Toggle Lid"
     icon: "mdi:swap-vertical"
