@@ -21,6 +21,12 @@ wifi:
 captive_portal:
 
 web_server:
+  port: 80
+  version: 3
+  auth:
+    username: !secret plaf108__web_user
+    password: !secret plaf108__web_password
+    type: digest
 
 binary_sensor:
   # I (468) gpio: GPIO[1]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:0
