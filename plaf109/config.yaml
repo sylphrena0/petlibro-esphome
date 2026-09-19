@@ -89,10 +89,6 @@ aw9523:
   id: expander
 
 globals:
-  - id: reset_button_press_start
-    type: uint32_t
-    restore_value: no
-    initial_value: '0'
   - id: lid_closed
     type: bool
     initial_value: "false"
@@ -676,15 +672,14 @@ binary_sensor:
     internal: true
     filters:
       - delayed_on: 25ms
-    on_press:
-      - lambda: id(reset_button_press_start) = millis();
-    on_release:
-      - lambda: |-
-          uint32_t held = millis() - id(reset_button_press_start);
-          if (held >= 2000) {
-            ESP_LOGD("reset_button", "Triggering restart");
-            id(restart_button).press();
-          }
+    on_click:
+      - min_length: 2s
+        max_length: 45s
+        then:
+          - logger.log:
+              format: "Triggering restart"
+              tag: reset_button
+          - button.press: restart_button
   - platform: gpio
     name: "Pet Present"
     id: presence_detector
