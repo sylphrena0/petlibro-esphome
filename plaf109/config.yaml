@@ -457,14 +457,6 @@ switch:
       mode:
         output: true
   - platform: template
-    id: toggle_door_closed
-    internal: true
-    turn_on_action: &door_toggle_action
-      - script.execute:
-          id: door_toggle
-    turn_off_action: *door_toggle_action
-    lambda: return id(lid_closed);
-  - platform: template
     name: "Cooling Enabled"
     id: cooling_enabled
     icon: "mdi:snowflake"
@@ -873,19 +865,15 @@ button:
       then:
         - if:
             condition:
-              - switch.is_off: toggle_door_closed
+              or:
+                - *lid-closed
+                - binary_sensor.is_off: presence_detector
             then:
-              - if:
-                  condition:
-                    binary_sensor.is_off: presence_detector
-                  then:
-                    - switch.turn_on: toggle_door_closed
-                  else:
-                    - logger.log:
-                        format: 'skipping close, presence detected'
-                        tag: 'lid'
+              - script.execute: door_toggle
             else:
-              - switch.turn_off: toggle_door_closed
+              - logger.log:
+                  format: 'skipping close, presence detected'
+                  tag: 'lid'
   - platform: template
     name: "Feed Now"
     icon: "mdi:food-turkey"
