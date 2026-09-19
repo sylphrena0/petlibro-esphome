@@ -1,6 +1,10 @@
-esphome:
+substitutions:
   name: plaf108
   friendly_name: Air Smart Feeder
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
 
 esp32:
   board: esp32-c3-devkitm-1

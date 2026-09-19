@@ -1,9 +1,13 @@
 # Board: ESP32-C3 DevKitM-1 (Espressif)
 # Definition: definitions/boards/esp32-c3-devkitm-1/manifest.yaml
 
-esphome:
+substitutions:
   name: plaf109
   friendly_name: Polar Wet Food Feeder
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
   on_boot:
     then:
       - output.turn_on: chime_pin
