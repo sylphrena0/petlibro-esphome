@@ -16,7 +16,7 @@ Functions:
   - waits for pet to arrive, up to a configurable timeout
   - if pet arrived
     - keeps door open for a configurable minimum feeding time after arrival
-    - then waits up to 10s for pet to be leave
+    - then waits till pet has been gone for 10s
     - closes door, if not manually closed
     - rotates plate
   - logs if pet arrived or not
