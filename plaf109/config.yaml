@@ -822,7 +822,7 @@ text_sensor:
     internal: true
     # P0_0/P0_1 (AW9523 IN_P0 bits 0-1) are a fixed hardware-revision
     # strap read once by the factory firmware's GetHardwareVersion
-    # not sure it's use
+    # not sure it's used
     lambda: |-
       const bool p0_0 = id(expander)->digital_read(0);
       const bool p0_1 = id(expander)->digital_read(1);
