@@ -11,6 +11,7 @@ esphome:
       - component.update: pet_visit_count
       - component.update: pet_total_time
       - component.update: last_visit_duration
+      - component.update: last_visit_time
       - &apply-status-led
         script.execute: apply_status_led
       - script.execute:
@@ -121,6 +122,10 @@ globals:
   - id: pet_arrival_time
     type: uint32_t
     restore_value: no
+    initial_value: '0'
+  - id: last_visit_epoch
+    type: uint32_t
+    restore_value: yes
     initial_value: '0'
 
 time:
@@ -721,7 +726,12 @@ binary_sensor:
                 id(visit_start_time) = millis();
                 id(visit_in_progress) = true;
                 id(visit_count) += 1;
+                auto now = id(sntp_time).now();
+                if (now.is_valid()) {
+                  id(last_visit_epoch) = now.timestamp;
+                }
             - component.update: pet_visit_count
+            - component.update: last_visit_time
     on_release:
       - if:
           condition:
@@ -788,6 +798,19 @@ binary_sensor:
           level: DEBUG
           tag: sensors
 text_sensor:
+  - platform: template
+    name: "Last Visit"
+    id: last_visit_time
+    icon: "mdi:clock-outline"
+    device_class: timestamp
+    web_server:
+      sorting_group_id: presence
+    update_interval: never
+    lambda: |-
+      if (id(last_visit_epoch) == 0) {
+        return {};
+      }
+      return ESPTime::from_epoch_utc(id(last_visit_epoch)).strftime("%Y-%m-%dT%H:%M:%SZ");
   - platform: template
     id: hardware_version
     name: "Hardware Version"
