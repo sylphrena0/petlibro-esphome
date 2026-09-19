@@ -253,6 +253,32 @@ script:
           timeout: 3400ms
       - switch.turn_off: plate_p0_6
       - switch.turn_off: plate_grating_sensor_power
+  - id: chime_play
+    mode: single
+    then:
+      # stock firmware also sends 0xEF on feed plan reset, likely a command
+      - lambda: |-
+          const uint8_t byte = 0x01;
+          id(chime_pin).turn_off();
+          delay_microseconds_safe(5000);
+          for (int i = 0; i < 8; i++) {
+            const bool bit = (byte >> i) & 1;
+            id(chime_pin).turn_on();
+            delay_microseconds_safe(bit ? 3000 : 1000);
+            id(chime_pin).turn_off();
+            delay_microseconds_safe(bit ? 1000 : 3000);
+          }
+          id(chime_pin).turn_on();  // idle
+      - delay: 3s  # minimum time between chimes
+  - id: chime_repeat
+    mode: restart
+    then:
+      - while:
+          condition:
+            lambda: return id(chime_interval).state > 0;
+          then:
+            - delay: !lambda return id(chime_interval).state * 1000;
+            - button.press: chime
   - id: feed_script
     mode: single
     parameters:
@@ -264,10 +290,12 @@ script:
           condition: *lid-closed
           then:
             - script.execute: door_toggle
+      - script.execute: chime_repeat
       - wait_until:
           condition:
             binary_sensor.is_on: presence_detector
           timeout: !lambda return id(arrival_timeout).state * 60000;
+      - script.stop: chime_repeat
       - if:
           condition:
             binary_sensor.is_on: presence_detector
@@ -359,6 +387,19 @@ number:
     optimistic: true
     restore_value: true
     initial_value: 3
+  - platform: template
+    name: "Chime Interval"
+    id: chime_interval
+    icon: "mdi:bell-cog"
+    web_server:
+      sorting_group_id: feed
+    unit_of_measurement: s
+    min_value: 0
+    max_value: 600
+    step: 5
+    optimistic: true
+    restore_value: true
+    initial_value: 0
 output:
   - platform: ledc
     id: presence_emitter
@@ -839,19 +880,7 @@ button:
     web_server:
       sorting_group_id: core
     on_press:
-      # stock firmware also sends 0xEF on feed plan reset, likely a command
-      - lambda: |-
-          const uint8_t byte = 0x01;
-          id(chime_pin).turn_off();
-          delay_microseconds_safe(5000);
-          for (int i = 0; i < 8; i++) {
-            const bool bit = (byte >> i) & 1;
-            id(chime_pin).turn_on();
-            delay_microseconds_safe(bit ? 3000 : 1000);
-            id(chime_pin).turn_off();
-            delay_microseconds_safe(bit ? 1000 : 3000);
-          }
-          id(chime_pin).turn_on();  // idle
+      - script.execute: chime_play
   - platform: template
     name: "Rotate Plate"
     id: rotate_plate

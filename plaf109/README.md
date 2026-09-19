@@ -14,6 +14,7 @@ Functions:
   - plays chime
   - opens door, if not already open
   - waits for pet to arrive, up to a configurable timeout
+    - optionally repeats chime at a configurable interval
   - if pet arrived
     - keeps door open for a configurable minimum feeding time after arrival
     - then waits till pet has been gone for 10s
@@ -33,7 +34,7 @@ Functions:
   - using encoder to ensure alignment
 - presence sensor
   - daily visits and time at feeder
-  - last visit duration
+  - last visit time and duration
 - status led
   - switch turns the white led on or off
   - pulses white while wifi is disconnected
