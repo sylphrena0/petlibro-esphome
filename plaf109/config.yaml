@@ -238,6 +238,7 @@ script:
       manual: bool
     then:
       - button.press: chime
+      - script.wait: door_toggle  # in the unlikely case door is in motion
       - if:
           condition: *lid-closed
           then:
