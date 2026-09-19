@@ -724,12 +724,12 @@ binary_sensor:
                 level: INFO
                 tag: sensors
             - lambda: |-
-                id(visit_start_time) = millis();
+                id(visit_start_time) = millis() - 1000;
                 id(visit_in_progress) = true;
                 id(visit_count) += 1;
                 auto now = id(sntp_time).now();
                 if (now.is_valid()) {
-                  id(last_visit_epoch) = now.timestamp;
+                  id(last_visit_epoch) = now.timestamp - 1;
                 }
             - component.update: pet_visit_count
             - component.update: last_visit_time
@@ -744,7 +744,7 @@ binary_sensor:
                 tag: sensors
             - lambda: |-
                 if (id(visit_in_progress)) {
-                  float duration_s = (millis() - id(visit_start_time)) / 1000.0;
+                  float duration_s = (millis() - id(visit_start_time) - 10000) / 1000.0;  // undo delayed_off
                   id(total_visit_seconds) += duration_s;
                   id(last_visit_duration).publish_state(duration_s);
                   id(pet_total_time).publish_state(id(total_visit_seconds));
