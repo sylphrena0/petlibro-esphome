@@ -439,7 +439,7 @@ switch:
     internal: true
   - platform: gpio
     id: door_grating_sensor_power
-    restore_mode: ALWAYS_ON  # disable when not in use to save battery
+    restore_mode: ALWAYS_OFF  # disable when not in use to save battery
     pin:
       aw9523: expander
       number: 7
