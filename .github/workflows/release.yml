@@ -18,18 +18,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bump version and push tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.2
+      - name: Determine version
+        id: version
+        uses: PaulHatch/semantic-version@v6.0.4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag_prefix: v
+          major_pattern: /BREAKING CHANGE:/
+          minor_pattern: /^feat(\(.+\))?!?:/
+          search_commit_body: true
 
       - name: Build changelog
         id: changelog
         uses: ardalanamini/auto-changelog@v5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-name: ${{ steps.tag_version.outputs.new_tag }}
+          release-name: ${{ steps.version.outputs.version_tag }}
           default-commit-type: Other Changes
           commit-types: |
             feat: Features
@@ -47,13 +50,14 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          name: ${{ steps.tag_version.outputs.new_tag }}
+          tag_name: ${{ steps.version.outputs.version_tag }}
+          name: ${{ steps.version.outputs.version_tag }}
+          target_commitish: ${{ github.sha }}
           body: ${{ steps.changelog.outputs.changelog }}
 
       - name: Get major version tag
         id: major_tag
-        run: echo "tag=$(echo '${{ steps.tag_version.outputs.new_tag }}' | cut -d. -f1)" >> "$GITHUB_OUTPUT"
+        run: echo "tag=$(echo '${{ steps.version.outputs.version_tag }}' | cut -d. -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Move floating major version tag
         uses: EndBug/latest-tag@v1
