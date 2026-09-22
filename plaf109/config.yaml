@@ -4,6 +4,8 @@
 substitutions:
   name: plaf109
   friendly_name: Polar Wet Food Feeder
+  dashboard: true
+  dashboard_path: /dashboard
 
 esphome:
   name: ${name}
@@ -77,6 +79,15 @@ web_server:
     - id: miscellaneous
       name: "Miscellaneous"
       sorting_weight: 60
+
+packages:
+  dashboard: !include
+    file: ${'extras/dashboard.yaml' if (dashboard | string | lower) in ['true', 'yes'] else 'extras/empty.yaml'}
+    vars:
+      title: ${friendly_name}
+      path: ${dashboard_path}
+      version: v0.0.2
+
 
 debug:
 
@@ -375,7 +386,7 @@ number:
     restore_value: true
     initial_value: 10
   - platform: template
-    name: "Minimum Feeding Time"
+    name: "Eating Time"
     id: minimum_feeding_time
     icon: "mdi:door-open"
     web_server:
