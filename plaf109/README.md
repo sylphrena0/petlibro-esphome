@@ -2,7 +2,15 @@
 
 ## Supported Features
 
-Functions:
+### On-Device Web Dashboard
+
+This device has an optional custom UI that is enabled by default, source code at [sylphrena0/petlibro-esphome-plaf109-ui](https://github.com/sylphrena0/petlibro-esphome-plaf109-ui).
+
+![Remote on a phone: feeding cards, chamber and configuration settings, and missed meal and battery warnings](https://raw.githubusercontent.com/sylphrena0/petlibro-esphome-plaf109-ui/refs/heads/main/docs/screenshots.png)
+
+Note that screenshot uses mocked data (this feeder doesn't seem to get that cold).
+
+### Functions
 
 - reset button
   - restarts esphome when held for more than 2s
@@ -42,7 +50,7 @@ Functions:
   - warnings override the switch
 - play chime
 
-Sensors:
+### Sensors
 
 - battery voltage sensor
   - displays charge percentage, using factory formula
@@ -96,6 +104,41 @@ Hold `DTR` to `GPIO9` and `RTS` to `EN` while connecting or powering the board. 
 *While I did hold `RTS` to `EN`, you might just need to hold `DTR` to `GPIO9` per the chip manual. I ended up soldering a lead to `TP4` for easy access once re-connected. If you are very brave, you could solder directly to the chip leads, but this may damage your board. I did so only for GPIO sniffing as I could not find test points for GPIO7/8 (pins used for the I2C expander).*
 
 Fig 1. A helping-hands tool held the pins in place for flashing, ignore the resistor used for testing.
+
+## Customization
+
+You can customize the configuration with substitutions:
+
+```yaml
+substitutions:
+  name: plaf109  # custom name for your device
+  friendly_name: Polar Wet Food Feeder  # used in HAOS, dashboard, and default UI
+  dashboard: true  # enable custom dashboard, accessible via <device-ip>/dashboard
+  dashboard_path: /dashboard  # only required if you want a path that isn't /dashboard
+
+packages:
+  plaf109: github://sylphrena0/petlibro-esphome/plaf109/config.yaml@main
+```
+
+If that's not enough, you can override components manually. If you wish to not require auth for the dashboard/web_server, for example:
+
+```yaml
+packages:
+  plaf109: github://sylphrena0/petlibro-esphome/plaf109/config.yaml@main
+
+web_server:
+  auth: !remove
+```
+
+Or if you wish to save flash space and not include the dashboard at all:
+
+```yaml
+substitutions:
+  dashboard: false
+
+packages:
+  plaf109: github://sylphrena0/petlibro-esphome/plaf109/config.yaml@main
+```
 
 ## Data Provenance
 

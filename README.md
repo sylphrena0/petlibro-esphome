@@ -61,13 +61,13 @@ Alternatively, you can use <https://web.esphome.io/> for the initial flash of yo
 
 ### Using as an ESPHome Package
 
-Instead of copying a device's `config.yaml` locally, you can pull it in directly from GitHub using ESPHome's [packages](https://esphome.io/components/packages.html) feature, pinned to a release tag:
+Instead of copying a device's `config.yaml` locally, you can pull it in directly from GitHub using ESPHome's [packages](https://esphome.io/components/packages.html) feature, pinned to a floating release tag or main:
 
 ```yaml
 packages:
-  plaf108: github://sylphrena0/petlibro-esphome/plaf108/config.yaml@v0
-  plaf109: github://sylphrena0/petlibro-esphome/plaf109/config.yaml@v0
-  plwf105: github://sylphrena0/petlibro-esphome/plwf105/config.yaml@v0
+  plaf108: github://sylphrena0/petlibro-esphome/plaf108/config.yaml@main  # always build latest
+  plaf109: github://sylphrena0/petlibro-esphome/plaf109/config.yaml@main  # always build latest
+  plwf105: github://sylphrena0/petlibro-esphome/plwf105/config.yaml@v1  # floating, will update non-major versions
 ```
 
 Only include the line for the device you're building. You'll still need a local `secrets.yaml` with the `!secret` keys referenced by that device's config (WiFi credentials, encryption/OTA keys, web UI login). You can override components as you need, but consider pinning to a specific tag if you do so to avoid your override breaking (though the risk is lower when you have to trigger the re-compile to pull in new changes).
