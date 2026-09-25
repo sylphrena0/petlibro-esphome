@@ -1,0 +1,17 @@
+external_components:
+  - source: github://sylphrena0/esphome-custom-web-server@main
+    components: [custom_web_server]
+
+custom_web_server:
+  - path: ${path}
+    js_url: https://github.com/sylphrena0/petlibro-esphome-plaf109-ui/releases/download/${version}/app.js
+    css_url: https://github.com/sylphrena0/petlibro-esphome-plaf109-ui/releases/download/${version}/style.css
+    body: <esp-app></esp-app>
+    title: ${title}
+    local: true  # cannot load dynamically due to CORS
+
+text_sensor:
+  - platform: version
+    name: "Firmware Version"
+    web_server:
+      sorting_group_id: miscellaneous
