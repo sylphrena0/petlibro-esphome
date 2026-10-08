@@ -15,6 +15,7 @@ This ESPHome firmware implements local LAN support with feature-parity as stock 
 - MQTT DNS intercept for PLAF203, no flashing required but no control over code executed on device: <https://github.com/icex2/plaf203/>
 - MQTT DNS intercept for a number of devices, no flashing required but no control over code executed on device: <https://github.com/smcneece/petlibro-local/>
 - HAOS Support with official servers, no privacy improvement: <https://github.com/jjjonesjr33/petlibro/>
+- PLAF109 UI, used in this repo: <https://github.com/sylphrena0/petlibro-esphome-plaf109-ui/>
 
 Please note that this software is provided without any explicit or implied warranty, and maintainers of this repository claim no responsibility for potential damage to your device, voiding of factory warranty, or any other damage caused.
 
