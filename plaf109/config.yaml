@@ -37,6 +37,8 @@ logger:
 api:
   encryption:
     key: !secret plaf109__encryption_key
+  # disable auto-rebooting when no api clients are active, this can interrupt feeds:
+  reboot_timeout: 0s
 ota:
   - platform: esphome
     encryption:
