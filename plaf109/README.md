@@ -87,7 +87,9 @@ The PLAF109 uses an [`ESP32-C3-WROOM-02U`](https://documentation.espressif.com/e
 
 ![Image of motherboard showing chip](./assets/esp32_chip.png)
 
-Wire `GND`/`TX`/`RX` to the `GND`/`TX`/`RX` headers on the motherboard, as with the other devices. For this device, you'll also need a full RS232 serial adapter with DTR/RTS lines to get into programming mode, see "Entering Programming Mode" below. I recommend carefully soldering headers onto at least these three connectors, see my messily soldered headers below:
+Connect the `GND`, `TX`, and `RX` lines of your USB-to-serial adapter to the `GND`, `TX`, and `RX` headers on the motherboard. This is the same procedure as for the other devices.
+
+It is recommended that you solder headers to these three labeled connectors. Refer to the image below:
 
 ![Image of motherboard showing GND/TX/RX connectors](./assets/motherboard.png)
 
@@ -95,13 +97,29 @@ Wire `GND`/`TX`/`RX` to the `GND`/`TX`/`RX` headers on the motherboard, as with 
 
 ## Entering Programming Mode
 
-Hold `DTR` to `GPIO9` and `RTS` to `EN` while connecting or powering the board. Pulling `GPIO9` low on first power-up as well helps ensure it takes.
+The ESP32-C3 starts in programming (download) mode when `GPIO9` is connected to `GND` at power-on.
 
-`TP4` on the back of the board is a convenient test point for `GPIO9`, so you can connect `DTR` there instead of soldering directly to the chip, but you'll need to carefully disconnect all wires and unscrew the motherboard to access it.
+`GPIO8` must be high at power-on. The I2C pull-up resistor on the motherboard keeps `GPIO8` high. You do not need to connect `GPIO8`.
+
+`TP4` on the back of the motherboard is a test point for `GPIO9`. To get access to `TP4`, disconnect all cables and remove the motherboard screws.
 
 ![Image of back of motherboard showing TP4](./assets/motherboard_back.png)
 
-*While I did hold `RTS` to `EN`, you might just need to hold `DTR` to `GPIO9` per the chip manual. I ended up soldering a lead to `TP4` for easy access once re-connected. If you are very brave, you could solder directly to the chip leads, but this may damage your board. I did so only for GPIO sniffing as I could not find test points for GPIO7/8 (pins used for the I2C expander).*
+**CAUTION:** Do not solder directly to the chip pins. This can cause damage to the motherboard. Use `TP4` instead.
+
+It is recommended that you solder a wire to `TP4`. Then you can get access to `GPIO9` after you install the motherboard again.
+
+1. Make sure that the motherboard has no power.
+2. Connect `TP4` (`GPIO9`) to `GND` with a wire.
+3. Connect the USB-to-serial adapter to your computer.
+4. Supply power to the motherboard. The ESP32-C3 starts in programming mode.
+5. Do the backup and flash procedures in the [top-level README](../README.md#flashing-esphome).
+6. Disconnect `TP4` from `GND`.
+7. Remove the power from the motherboard. Then supply power again. The ESP32-C3 starts the new firmware.
+
+If the ESP32-C3 does not start in programming mode, make sure that the wire between `TP4` and `GND` has a good connection. Then do steps 1 to 4 again.
+
+**NOTE:** `RTS` is not connected to `EN`. Thus `esptool` cannot reset the ESP32-C3 after it writes the firmware. You must remove the power and supply it again (step 7).
 
 Fig 1. A helping-hands tool held the pins in place for flashing, ignore the resistor used for testing.
 
