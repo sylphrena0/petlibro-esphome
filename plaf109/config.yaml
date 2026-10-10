@@ -306,8 +306,12 @@ script:
       - script.execute: chime_repeat
       - wait_until:
           condition:
-            binary_sensor.is_on: presence_detector
-          timeout: !lambda return id(arrival_timeout).state * 60000;
+            or:
+              - binary_sensor.is_on: presence_detector
+              - *lid-closed  # closing the lid cancels the meal
+          timeout: !lambda |-
+            const float minutes = id(arrival_timeout).state;
+            return minutes > 0 ? (uint32_t) (minutes * 60000) : UINT32_MAX;  // 0 waits until the pet arrives
       - script.stop: chime_repeat
       - if:
           condition:
@@ -350,13 +354,25 @@ script:
                   - lambda: id(missed_meal_warning) = false;
                   - *apply-status-led
           else:
-            - logger.log:
-                format: "pet did not come for meal in %.0f minute window, so plate was not rotated"
-                args: ['id(arrival_timeout).state']
-                level: WARN
-                tag: feeding
-            - lambda: id(missed_meal_warning) = true;
-            - *apply-status-led
+            - if:
+                condition: *lid-closed
+                then:
+                  - logger.log:
+                      format: "lid was closed before pet arrived, so meal was cancelled and plate was not rotated"
+                      level: WARN
+                      tag: feeding
+                else:
+                  - logger.log:
+                      format: "pet did not come for meal in %.0f minute window, so plate was not rotated"
+                      args: ['id(arrival_timeout).state']
+                      level: WARN
+                      tag: feeding
+            - if:
+                condition:  # cancelling a manual feed leaves the schedule on track
+                  lambda: return !(manual && id(lid_closed));
+                then:
+                  - lambda: id(missed_meal_warning) = true;
+                  - *apply-status-led
       - *close-lid
 
 number:
@@ -381,7 +397,7 @@ number:
     web_server:
       sorting_group_id: feed
     unit_of_measurement: min
-    min_value: 1
+    min_value: 0  # 0 waits until the pet arrives
     max_value: 60
     step: 1
     optimistic: true
