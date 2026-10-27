@@ -395,7 +395,7 @@ number:
       sorting_group_id: feed
     unit_of_measurement: min
     min_value: 0
-    max_value: 120
+    max_value: 240  # stock firmware allows up to 4 hours
     step: 1
     optimistic: true
     restore_value: true
