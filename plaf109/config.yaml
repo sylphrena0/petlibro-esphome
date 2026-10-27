@@ -940,6 +940,15 @@ button:
         - script.execute:
             id: feed_script
             manual: true
+  - platform: template
+    name: "Clear Missed Meal"
+    icon: "mdi:bell-check-outline"
+    web_server:
+      sorting_group_id: feed
+    on_press:
+      then:
+        - lambda: id(missed_meal_warning) = false;
+        - *apply-status-led
 
 datetime:
   - platform: template

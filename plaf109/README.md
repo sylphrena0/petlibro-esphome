@@ -35,7 +35,7 @@ Note that screenshot uses mocked data (this feeder doesn't seem to get that cold
   - feeds front plate, then rotates AFTER meal
   - uses same flow as manual feed, no special handling
   - warns when a meal is missed or cancelled (plate is not rotated in these cases)
-    - warning survives reboots, is cleared at midnight or by a successful manual feed
+    - warning survives reboots, is cleared at midnight, by a successful manual feed, or with the clear button
 - open/close lid
   - will only close when pet is not present
   - using encoder to ensure lid opens/closes fully
