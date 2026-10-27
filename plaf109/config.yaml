@@ -88,7 +88,7 @@ packages:
     vars:
       title: ${friendly_name}
       path: ${dashboard_path}
-      version: v0.0.2
+      version: v0.1.0
 
 
 debug:
