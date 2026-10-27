@@ -306,7 +306,9 @@ script:
       - script.execute: chime_repeat
       - wait_until:
           condition:
-            binary_sensor.is_on: presence_detector
+            or:
+              - binary_sensor.is_on: presence_detector
+              - *lid-closed  # closing the lid cancels the meal
           timeout: !lambda return id(arrival_timeout).state * 60000;
       - script.stop: chime_repeat
       - if:
@@ -350,11 +352,19 @@ script:
                   - lambda: id(missed_meal_warning) = false;
                   - *apply-status-led
           else:
-            - logger.log:
-                format: "pet did not come for meal in %.0f minute window, so plate was not rotated"
-                args: ['id(arrival_timeout).state']
-                level: WARN
-                tag: feeding
+            - if:
+                condition: *lid-closed
+                then:
+                  - logger.log:
+                      format: "lid was closed before pet arrived, so meal was cancelled and plate was not rotated"
+                      level: WARN
+                      tag: feeding
+                else:
+                  - logger.log:
+                      format: "pet did not come for meal in %.0f minute window, so plate was not rotated"
+                      args: ['id(arrival_timeout).state']
+                      level: WARN
+                      tag: feeding
             - lambda: id(missed_meal_warning) = true;
             - *apply-status-led
       - *close-lid

@@ -23,6 +23,7 @@ Note that screenshot uses mocked data (this feeder doesn't seem to get that cold
   - opens door, if not already open
   - waits for pet to arrive, up to a configurable timeout
     - optionally repeats chime at a configurable interval
+    - closing the lid cancels the meal
   - if pet arrived
     - keeps door open for a configurable minimum feeding time after arrival
     - then waits till pet has been gone for 10s
@@ -33,7 +34,7 @@ Note that screenshot uses mocked data (this feeder doesn't seem to get that cold
 - daily feeding schedule, stored on-device
   - feeds front plate, then rotates AFTER meal
   - uses same flow as manual feed, no special handling
-  - warns when a meal is missed (plate is not rotated in this case)
+  - warns when a meal is missed or cancelled (plate is not rotated in these cases)
     - warning survives reboots, is cleared at midnight or by a successful manual feed
 - open/close lid
   - will only close when pet is not present
