@@ -309,7 +309,9 @@ script:
             or:
               - binary_sensor.is_on: presence_detector
               - *lid-closed  # closing the lid cancels the meal
-          timeout: !lambda return id(arrival_timeout).state * 60000;
+          timeout: !lambda |-
+            const float minutes = id(arrival_timeout).state;
+            return minutes > 0 ? (uint32_t) (minutes * 60000) : UINT32_MAX;  // 0 waits until the pet arrives
       - script.stop: chime_repeat
       - if:
           condition:
@@ -391,7 +393,7 @@ number:
     web_server:
       sorting_group_id: feed
     unit_of_measurement: min
-    min_value: 1
+    min_value: 0  # 0 waits until the pet arrives
     max_value: 60
     step: 1
     optimistic: true

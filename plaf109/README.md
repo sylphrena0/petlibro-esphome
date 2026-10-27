@@ -22,6 +22,7 @@ Note that screenshot uses mocked data (this feeder doesn't seem to get that cold
   - plays chime
   - opens door, if not already open
   - waits for pet to arrive, up to a configurable timeout
+    - a timeout of 0 waits until the pet arrives
     - optionally repeats chime at a configurable interval
     - closing the lid cancels the meal
   - if pet arrived
@@ -65,7 +66,7 @@ Note that screenshot uses mocked data (this feeder doesn't seem to get that cold
 
 - use of motor current to detect stall
 - maybe warn when a manual plate rotation offsets the feeding schedule
-- scheduled meals will not trigger if set in close proximity (under 10-15m apart), maybe queue?
+- scheduled meals will not trigger while a previous meal is still in progress (waiting for the pet or eating), maybe queue?
 - better calibration of temp sensor, if possible
 - bring some features to other devices
 - support for feeding schedules for multiple days
