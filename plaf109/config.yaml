@@ -129,10 +129,10 @@ globals:
     type: bool
     restore_value: no
     initial_value: 'false'
-  - id: missed_meal_warning
-    type: bool
+  - id: missed_meal_reason  # empty when no meal was missed
+    type: std::string
     restore_value: yes
-    initial_value: 'false'
+    max_restore_data_length: 60
   - id: pet_arrival_time
     type: uint32_t
     restore_value: no
@@ -153,7 +153,7 @@ time:
           - lambda: |-
               id(visit_count) = 0;
               id(total_visit_seconds) = 0;
-              id(missed_meal_warning) = false;
+              id(missed_meal_reason) = "";
               id(last_visit_duration).publish_state(0);
           - component.update: pet_visit_count
           - component.update: pet_total_time
@@ -179,6 +179,7 @@ script:
             - delay: 1s
   - id: apply_status_led
     then:
+      - component.update: missed_meal_reason_sensor
       - script.stop: status_led_alternate
       - light.turn_off: led_white
       - light.turn_off: led_red
@@ -189,7 +190,7 @@ script:
           then:
             - if:
                 condition: &missed-meal
-                  lambda: return id(missed_meal_warning);
+                  lambda: return !id(missed_meal_reason).empty();
                 then:
                   - script.execute: status_led_alternate
                 else:
@@ -343,13 +344,13 @@ script:
             - button.press: rotate_plate  # rotate only after feeding
             - if:  # a manual feed catches the plate back up
                 condition:
-                  lambda: return manual && id(missed_meal_warning);
+                  lambda: return manual && !id(missed_meal_reason).empty();
                 then:
                   - logger.log:
                       format: "manual feed caught the plate up, clearing missed meal warning"
                       level: INFO
                       tag: feeding
-                  - lambda: id(missed_meal_warning) = false;
+                  - lambda: id(missed_meal_reason) = "";
                   - *apply-status-led
           else:
             - if:
@@ -359,13 +360,16 @@ script:
                       format: "lid was closed before pet arrived, so meal was cancelled and plate was not rotated"
                       level: WARN
                       tag: feeding
+                  - lambda: |-
+                      id(missed_meal_reason) = str_sprintf("Lid manually closed before pet arrived for %s feed", manual ? "manual" : "scheduled");
                 else:
                   - logger.log:
                       format: "pet did not come for meal in %.0f minute window, so plate was not rotated"
                       args: ['id(arrival_timeout).state']
                       level: WARN
                       tag: feeding
-            - lambda: id(missed_meal_warning) = true;
+                  - lambda: |-
+                      id(missed_meal_reason) = str_sprintf("%s timed out before pet arrived", manual ? "Manual feed" : "Scheduled meal");
             - *apply-status-led
       - *close-lid
 
@@ -814,7 +818,7 @@ binary_sensor:
     device_class: problem
     web_server:
       sorting_group_id: feed
-    lambda: return id(missed_meal_warning);
+    lambda: return !id(missed_meal_reason).empty();
   - platform: gpio
     id: plate_grating_raw
     internal: true
@@ -856,6 +860,15 @@ binary_sensor:
           level: DEBUG
           tag: sensors
 text_sensor:
+  - platform: template
+    name: "Missed Meal Reason"
+    id: missed_meal_reason_sensor
+    icon: "mdi:food-off"
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: feed
+    update_interval: never
+    lambda: return id(missed_meal_reason);
   - platform: template
     name: "Last Visit"
     id: last_visit_time
@@ -947,7 +960,7 @@ button:
       sorting_group_id: feed
     on_press:
       then:
-        - lambda: id(missed_meal_warning) = false;
+        - lambda: id(missed_meal_reason) = "";
         - *apply-status-led
 
 datetime:
@@ -965,9 +978,20 @@ datetime:
           condition:
             switch.is_on: feeding_schedule_enabled
           then:
-            - script.execute:
-                id: feed_script
-                manual: false
+            - if:
+                condition:
+                  script.is_running: feed_script
+                then:
+                  - logger.log:
+                      format: "previous meal still in progress, so this meal was skipped"
+                      level: WARN
+                      tag: feeding
+                  - lambda: id(missed_meal_reason) = "Scheduled meal skipped, previous meal was in progress";
+                  - *apply-status-led
+                else:
+                  - script.execute:
+                      id: feed_script
+                      manual: false
 
   - platform: template
     name: "Meal Two"

@@ -35,6 +35,8 @@ Note that screenshot uses mocked data (this feeder doesn't seem to get that cold
   - feeds front plate, then rotates AFTER meal
   - uses same flow as manual feed, no special handling
   - warns when a meal is missed or cancelled (plate is not rotated in these cases)
+    - also warns when a meal is skipped because the previous one is still in progress
+    - reason is shown in the dashboard and in a "Missed Meal Reason" sensor
     - warning survives reboots, is cleared at midnight, by a successful manual feed, or with the clear button
 - open/close lid
   - will only close when pet is not present
@@ -65,7 +67,7 @@ Note that screenshot uses mocked data (this feeder doesn't seem to get that cold
 
 - use of motor current to detect stall
 - maybe warn when a manual plate rotation offsets the feeding schedule
-- scheduled meals will not trigger if set in close proximity (under 10-15m apart), maybe queue?
+- scheduled meals are skipped while a previous meal is still in progress (todo: consider queue)
 - better calibration of temp sensor, if possible
 - bring some features to other devices
 - support for feeding schedules for multiple days
