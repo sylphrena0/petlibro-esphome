@@ -396,7 +396,7 @@ number:
       sorting_group_id: feed
     unit_of_measurement: min
     min_value: 1
-    max_value: 60
+    max_value: 1440  # 24 hours
     step: 1
     optimistic: true
     restore_value: true
