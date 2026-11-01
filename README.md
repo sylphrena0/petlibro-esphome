@@ -8,6 +8,10 @@ PetLibro makes WiFi-connected pet food feeders and water fountains based on ESP8
 
 This ESPHome firmware implements local LAN support with feature-parity as stock firmware without need for cloud/WAN connection.
 
+![PLAF109 on-device web dashboard on a phone: feeding cards, chamber + configuration settings, and missed meal + battery warnings](https://raw.githubusercontent.com/sylphrena0/petlibro-esphome-plaf109-ui/refs/heads/main/docs/screenshots.png)
+
+[PLAF109](plaf109/#on-device-web-dashboard) includes an optional on-device web dashboard, so it can be controlled from a phone without Home Assistant. Screenshot uses mocked data.
+
 **Related repositories and alternatives:**
 
 - Original ESPHome Repository: <https://github.com/taylorfinnell/petlibro-esphome/>
