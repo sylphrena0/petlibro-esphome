@@ -66,7 +66,7 @@ ota:
 
 dashboard_import:
   package_import_url: github://sylphrena0/petlibro-esphome/plwf105/config.yaml@main
-  import_full_config: true
+  import_full_config: false
 
 wifi:
   ssid: !secret wifi_ssid
