@@ -52,17 +52,15 @@ esp32:
     type: esp-idf
 
 api:
-# uncomment the two lines below to use an encryption key from your secret, or include your own
-#  encryption:
-#    key: !secret encryption_key
+  encryption:
+    key: !secret plwf105__encryption_key
 
 logger:
   level: debug
 
 ota:
-  platform: esphome
-# uncomment the line below to use an ota password from your secret, or include your own
-#  password: !secret ota_password
+  - platform: esphome
+    encryption:
 
 dashboard_import:
   package_import_url: github://sylphrena0/petlibro-esphome/plwf105/config.yaml@main
@@ -71,6 +69,9 @@ dashboard_import:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  ap:
+    ssid: PLWF105 Fallback Hotspot
+    password: !secret plwf105__hotspot_password
 
 captive_portal:
 
