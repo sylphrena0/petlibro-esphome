@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Board: ESP32-C3 DevKitM-1 (Espressif)
 # Definition: definitions/boards/esp32-c3-devkitm-1/manifest.yaml
 

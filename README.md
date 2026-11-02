@@ -104,3 +104,7 @@ If you're reverse-engineering a new PetLibro device to add support for it, try:
 - Connecting via serial and watch the boot/UART logs. The stock firmware's log output may reveal GPIO pin assignments and modes. This might not work on all models
 - Dumping the factory firmware (see "Dumping Stock Firmware" above) and analyze it with [Ghidra](https://ghidra-sre.org/) to understand what the stock firmware is doing and reveal GPIO functions
 - If the device has an I2C expander on the board (like PLAF109), you can sniff the I2C bus to determine its behavior. [sigrok](https://sigrok.org/) with a logic analyzer, a Raspberry Pi Pico running [sigrok-pico](https://github.com/pico-coder/sigrok-pico) worked well for me (since I had a spare lying around).
+
+## License
+
+Licensed under [GPL-3.0-or-later](LICENSE), except portions of `plaf108/` and `plwf105/` derived from [taylorfinnell/petlibro-esphome](https://github.com/taylorfinnell/petlibro-esphome), which has no license as of time of writing.
