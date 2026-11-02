@@ -4,7 +4,7 @@
 
 A collection of alternative DIY open-source [ESPHome firmware](https://esphome.io) for [Petlibro](https://petlibro.com) series of smart cat/dog food feeders and water fountains devices. Fork of [taylorfinnell/petlibro-esphome](https://github.com/taylorfinnell/petlibro-esphome) to add support for new feeders and improve original devices.
 
-PetLibro makes WiFi-connected pet food feeders and water fountains based on ESP8266/ESP32 microcontrollers from Espressif. Their factory firmware requires you to to create an account and remain connected to their cloud to be functional. We have good reason not to trust PetLibro with our privacy due to [their exceptionally poor handling of vulnerabilities in the past](https://bobdahacker.com/blog/petlibro).
+PetLibro makes WiFi-connected pet food feeders and water fountains based on ESP8266/ESP32 microcontrollers from Espressif. Their factory firmware requires you to create an account and remain connected to their cloud to be functional. We have good reason not to trust PetLibro with our privacy due to [their exceptionally poor handling of vulnerabilities in the past](https://bobdahacker.com/blog/petlibro).
 
 This ESPHome firmware implements local LAN support with feature-parity as stock firmware without need for cloud/WAN connection.
 
