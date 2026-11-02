@@ -33,6 +33,7 @@ esp32:
 
 logger:
   level: DEBUG
+  baud_rate: 0  # default usb-jtag pins are repurposed, set hardware_uart: UART0 for logs on the serial header
 
 api:
   encryption:
