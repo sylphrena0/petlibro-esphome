@@ -15,9 +15,6 @@ esphome:
     board_build.flash_mode: dio
     board_build.flash_size: 4MB
     board_build.f_flash: 40000000L
-  project:
-    name: petlibro.plwf105
-    version: "1.2.4"
   on_boot:
     priority: 200
     then:
@@ -61,10 +58,6 @@ logger:
 ota:
   - platform: esphome
     encryption:
-
-dashboard_import:
-  package_import_url: github://sylphrena0/petlibro-esphome/plwf105/config.yaml@main
-  import_full_config: false
 
 wifi:
   ssid: !secret wifi_ssid
