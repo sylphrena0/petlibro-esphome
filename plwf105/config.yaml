@@ -65,7 +65,7 @@ ota:
 #  password: !secret ota_password
 
 dashboard_import:
-  package_import_url: github://taylorfinnell/petlibro-esphome/plwf105/plwf105.yaml@master
+  package_import_url: github://sylphrena0/petlibro-esphome/plwf105/config.yaml@main
   import_full_config: true
 
 wifi:
