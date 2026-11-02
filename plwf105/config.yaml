@@ -68,6 +68,14 @@ wifi:
 
 captive_portal:
 
+web_server:
+  port: 80
+  version: 3
+  auth:
+    username: !secret plwf105__web_user
+    password: !secret plwf105__web_password
+    type: digest
+
 
 globals:
   # tmp variable to hold whatever value the water was at before an event is detected
