@@ -723,7 +723,6 @@ binary_sensor:
 time:
   - platform: sntp
     id: sntp_time
-    timezone: America/Chicago
     on_time:
       - seconds: 0
         minutes: 0
